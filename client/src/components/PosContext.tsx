@@ -14,14 +14,12 @@ import { useAuth } from "./AuthContext";
 import {
   db,
   ensureSeeded,
-  DEFAULT_TABLES,
   DEFAULT_CATEGORIES,
   type OrderItemLine,
   type OrderRow,
   type OrderStatus,
   type PayMethod,
   type ShiftRecord,
-  type TableRow,
   type CashMovementRow,
   type CashMovementType,
   type CashMovementCategory,
@@ -29,11 +27,9 @@ import {
 } from "../lib/db";
 import {
   deleteProduct as repoDeleteProduct,
-  deleteTable as repoDeleteTable,
   loadActiveShift,
   loadOrders,
   loadProducts,
-  loadTables,
   loadCashMovements,
   loadCategories,
   saveCashMovement as repoSaveCashMovement,
@@ -41,18 +37,15 @@ import {
   saveCategory as repoSaveCategory,
   updateCategory as repoUpdateCategory,
   deleteCategory as repoDeleteCategory,
-  nextOrderNo,
   saveOrder,
   saveProduct as repoSaveProduct,
   saveShift as repoSaveShift,
-  saveTable as repoSaveTable,
   updateOrderStatus as repoUpdateOrderStatus,
 } from "../lib/repo";
 
 export type {
   PayMethod,
   OrderStatus,
-  TableRow,
   ShiftRecord,
   OrderRow,
   CashMovementRow,
@@ -83,7 +76,6 @@ type PosContextValue = {
   ready: boolean;
   products: MenuItem[];
   categories: CategoryRow[];
-  tables: TableRow[];
   orderNo: number;
   lines: CartLine[];
   totals: OrderTotals;
@@ -109,20 +101,6 @@ type PosContextValue = {
   clearOrder: () => void;
   saveDraft: () => number;
   payOrder: (method: PayMethod, cashReceived?: number) => PayResult;
-  createSelfOrder: (input: {
-    customerName: string;
-    lines: CartLine[];
-    paymentChoice: "paid-now" | "pay-later";
-    method?: PayMethod;
-  }) => Promise<OrderRow>;
-  createWaiterOrder: (input: {
-    customerName?: string;
-    waiterId?: string;
-    waiterName?: string;
-    lines: CartLine[];
-    status?: OrderStatus;
-    method?: PayMethod;
-  }) => Promise<OrderRow>;
   addCashMovement: (input: {
     type: CashMovementType;
     category: CashMovementCategory;
@@ -133,7 +111,6 @@ type PosContextValue = {
   deleteCashMovement: (id: string) => Promise<void>;
   reloadCashMovements: () => Promise<void>;
   reloadProducts: () => Promise<void>;
-  reloadTables: () => Promise<void>;
   reloadOrders: () => Promise<void>;
   reloadCategories: () => Promise<void>;
   addProduct: (item: MenuItem) => Promise<void>;
@@ -142,9 +119,6 @@ type PosContextValue = {
   addCategory: (category: Partial<CategoryRow>) => Promise<CategoryRow>;
   updateCategory: (id: string, updates: Partial<CategoryRow>, oldName?: string) => Promise<void>;
   deleteCategory: (id: string, categoryName: string, reassignToCategoryName?: string) => Promise<void>;
-  addTable: (table: TableRow) => Promise<void>;
-  updateTable: (table: TableRow) => Promise<void>;
-  deleteTable: (id: string) => Promise<void>;
   updateOrderStatus: (no: number, status: OrderStatus) => Promise<void>;
   openShift: (cashierName: string, startingCash: number) => Promise<void>;
   closeShift: (
@@ -156,8 +130,6 @@ type PosContextValue = {
 };
 
 const PosContext = createContext<PosContextValue | null>(null);
-
-const BASELINE_PENJUALAN_HARI_INI = 12_229_000;
 
 function computeTotals(
   lines: CartLine[],
@@ -208,19 +180,15 @@ export function PosProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [products, setProducts] = useState<MenuItem[]>(MENU_SEED);
   const [categories, setCategories] = useState<CategoryRow[]>(DEFAULT_CATEGORIES);
-  const [tables, setTables] = useState<TableRow[]>(DEFAULT_TABLES);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [activeShift, setActiveShift] = useState<ShiftRecord | null>(null);
 
   const [orderNo, setOrderNo] = useState(1049);
   const [lastReceipt, setLastReceipt] = useState<OrderRow | null>(null);
 
-  // Cart lines
+  // Cart lines (starts empty for fresh cashier sessions)
   const [tableDrafts, setTableDrafts] = useState<Record<string, CartLine[]>>({
-    default: [
-      { itemId: "kopi-susu", qty: 1, note: "Gula aren sedikit" },
-      { itemId: "roti-panggang-isi", qty: 1 },
-    ],
+    default: [],
   });
 
   // Discounts & Tax Configs
@@ -281,10 +249,9 @@ export function PosProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         await ensureSeeded();
-        let [loadedProducts, loadedOrders, loadedTables, shift, loadedMovements, loadedCats] = await Promise.all([
+        let [loadedProducts, loadedOrders, shift, loadedMovements, loadedCats] = await Promise.all([
           loadProducts(),
           loadOrders(),
-          loadTables(),
           loadActiveShift(),
           loadCashMovements(),
           loadCategories(),
@@ -297,7 +264,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
         setProducts(loadedProducts);
         setCategories(loadedCats);
         setOrders(loadedOrders);
-        setTables(loadedTables);
         setCashMovements(loadedMovements);
         setActiveShift(shift || null);
         const last = loadedOrders[0]?.no ?? 1048;
@@ -316,9 +282,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
           const maxNo = loadedOrders.reduce((max, o) => Math.max(max, o.no), 1048);
           setOrderNo((prev) => Math.max(prev, maxNo + 1));
         }
-      } else if (msg.type === "TABLE_UPDATED") {
-        const loadedTables = await loadTables();
-        if (alive) setTables(loadedTables);
       } else if (msg.type === "PRODUCTS_UPDATED") {
         const loadedProducts = await loadProducts();
         if (alive) setProducts(loadedProducts);
@@ -468,10 +431,8 @@ export function PosProvider({ children }: { children: ReactNode }) {
         itemCount: recordedTotals.count,
         items: orderItems,
         method,
-        source: "pos",
         cashierId: currentStaff?.id,
         cashierName: currentStaff?.name,
-        paymentChoice: status === "sudah-dibayar" ? "paid-now" : "pay-later",
         paidAt: status === "sudah-dibayar" ? Date.now() : undefined,
         createdAt: Date.now(),
       };
@@ -509,128 +470,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       return { orderNo: no, total: paidTotal, change, order: row };
     },
     [orderNo, recordOrder, totals],
-  );
-
-  const createSelfOrder = useCallback(
-    async (input: {
-      customerName: string;
-      lines: CartLine[];
-      paymentChoice: "paid-now" | "pay-later";
-      method?: PayMethod;
-    }): Promise<OrderRow> => {
-      const orderNumber = await nextOrderNo();
-      const orderItems: OrderItemLine[] = input.lines.map((l) => {
-        const prod = products.find((p) => p.id === l.itemId);
-        return {
-          itemId: l.itemId,
-          name: prod?.name || "Produk",
-          qty: l.qty,
-          price: prod?.price || 0,
-          note: l.note,
-        };
-      });
-
-      const selfTotals = computeTotals(
-        input.lines,
-        products,
-        "percent",
-        0,
-        taxEnabled,
-        taxRate,
-        serviceChargeEnabled,
-        serviceChargeRate,
-      );
-
-      const status: OrderStatus = input.paymentChoice === "paid-now" ? "sudah-dibayar" : "disimpan";
-
-      const row: OrderRow = {
-        no: orderNumber,
-        status,
-        total: selfTotals.total,
-        subtotal: selfTotals.subtotal,
-        tax: selfTotals.tax,
-        discount: 0,
-        serviceCharge: selfTotals.serviceCharge,
-        itemCount: selfTotals.count,
-        items: orderItems,
-        method: input.method || (input.paymentChoice === "paid-now" ? "qris" : undefined),
-        customerName: input.customerName.trim() || "Pelanggan",
-        source: "self-order",
-        paymentChoice: input.paymentChoice,
-        paidAt: status === "sudah-dibayar" ? Date.now() : undefined,
-        createdAt: Date.now(),
-      };
-
-      await saveOrder(row);
-      setOrders((prev) => [row, ...prev]);
-      setOrderNo((n) => Math.max(n + 1, orderNumber + 1));
-      broadcastSync("ORDER_CREATED", { order: row });
-      return row;
-    },
-    [products, serviceChargeEnabled, serviceChargeRate, taxEnabled, taxRate],
-  );
-
-  const createWaiterOrder = useCallback(
-    async (input: {
-      customerName?: string;
-      waiterId?: string;
-      waiterName?: string;
-      lines: CartLine[];
-      status?: OrderStatus;
-      method?: PayMethod;
-    }): Promise<OrderRow> => {
-      const orderNumber = await nextOrderNo();
-      const orderItems: OrderItemLine[] = input.lines.map((l) => {
-        const prod = products.find((p) => p.id === l.itemId);
-        return {
-          itemId: l.itemId,
-          name: prod?.name || "Produk",
-          qty: l.qty,
-          price: prod?.price || 0,
-          note: l.note,
-        };
-      });
-
-      const waiterTotals = computeTotals(
-        input.lines,
-        products,
-        "percent",
-        0,
-        taxEnabled,
-        taxRate,
-        serviceChargeEnabled,
-        serviceChargeRate,
-      );
-
-      const status: OrderStatus = input.status || (input.method ? "sudah-dibayar" : "disimpan");
-
-      const row: OrderRow = {
-        no: orderNumber,
-        status,
-        total: waiterTotals.total,
-        subtotal: waiterTotals.subtotal,
-        tax: waiterTotals.tax,
-        discount: 0,
-        serviceCharge: waiterTotals.serviceCharge,
-        itemCount: waiterTotals.count,
-        items: orderItems,
-        method: input.method,
-        customerName: input.customerName?.trim() || "Pelanggan",
-        waiterId: input.waiterId,
-        waiterName: input.waiterName,
-        source: "waiter",
-        paymentChoice: status === "sudah-dibayar" ? "paid-now" : "pay-later",
-        paidAt: status === "sudah-dibayar" ? Date.now() : undefined,
-        createdAt: Date.now(),
-      };
-
-      await saveOrder(row);
-      setOrders((prev) => [row, ...prev]);
-      setOrderNo((n) => Math.max(n + 1, orderNumber + 1));
-      broadcastSync("ORDER_CREATED", { order: row });
-      return row;
-    },
-    [products, serviceChargeEnabled, serviceChargeRate, taxEnabled, taxRate],
   );
 
   const updateOrderStatus = useCallback(async (no: number, status: OrderStatus) => {
@@ -753,12 +592,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
     broadcastSync("PRODUCTS_UPDATED");
   }, []);
 
-  const reloadTables = useCallback(async () => {
-    const t = await loadTables();
-    setTables(t);
-    broadcastSync("TABLE_UPDATED");
-  }, []);
-
   const reloadOrders = useCallback(async () => {
     const o = await loadOrders();
     setOrders(o);
@@ -827,38 +660,17 @@ export function PosProvider({ children }: { children: ReactNode }) {
     broadcastSync("PRODUCTS_UPDATED");
   }, []);
 
-  const addTable = useCallback(async (table: TableRow) => {
-    await repoSaveTable(table);
-    setTables(await loadTables());
-    broadcastSync("TABLE_UPDATED");
-  }, []);
-
-  const updateTable = useCallback(async (table: TableRow) => {
-    await repoSaveTable(table);
-    setTables(await loadTables());
-    broadcastSync("TABLE_UPDATED");
-  }, []);
-
-  const deleteTable = useCallback(async (id: string) => {
-    await repoDeleteTable(id);
-    setTables(await loadTables());
-    broadcastSync("TABLE_UPDATED");
-  }, []);
-
   const resetSeed = useCallback(async () => {
     await resetToDemoSeed();
-    const [prods, tbls, movs, cats] = await Promise.all([
+    const [prods, movs, cats] = await Promise.all([
       loadProducts(),
-      loadTables(),
       loadCashMovements(),
       loadCategories(),
     ]);
     setProducts(prods);
-    setTables(tbls);
     setCashMovements(movs);
     setCategories(cats);
     broadcastSync("PRODUCTS_UPDATED");
-    broadcastSync("TABLE_UPDATED");
     broadcastSync("CATEGORY_UPDATED");
   }, []);
 
@@ -867,7 +679,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       ready,
       products,
       categories,
-      tables,
       orderNo,
       lines,
       totals,
@@ -893,13 +704,10 @@ export function PosProvider({ children }: { children: ReactNode }) {
       clearOrder,
       saveDraft,
       payOrder,
-      createSelfOrder,
-      createWaiterOrder,
       addCashMovement,
       deleteCashMovement,
       reloadCashMovements,
       reloadProducts,
-      reloadTables,
       reloadOrders,
       reloadCategories,
       addProduct,
@@ -908,9 +716,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       addCategory,
       updateCategory,
       deleteCategory,
-      addTable,
-      updateTable,
-      deleteTable,
       updateOrderStatus,
       openShift,
       closeShift,
@@ -920,7 +725,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       ready,
       products,
       categories,
-      tables,
       orderNo,
       lines,
       totals,
@@ -946,13 +750,10 @@ export function PosProvider({ children }: { children: ReactNode }) {
       clearOrder,
       saveDraft,
       payOrder,
-      createSelfOrder,
-      createWaiterOrder,
       addCashMovement,
       deleteCashMovement,
       reloadCashMovements,
       reloadProducts,
-      reloadTables,
       reloadOrders,
       reloadCategories,
       addProduct,
@@ -961,9 +762,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       addCategory,
       updateCategory,
       deleteCategory,
-      addTable,
-      updateTable,
-      deleteTable,
       updateOrderStatus,
       openShift,
       closeShift,
@@ -985,10 +783,9 @@ export function runningOrdersCount(orders: OrderRow[]): number {
 }
 
 export function salesToday(orders: OrderRow[]): number {
-  const paidToday = orders
-    .filter((o) => o.status === "sudah-dibayar" && isToday(o.paidAt))
+  return orders
+    .filter((o) => o.status === "sudah-dibayar" && isToday(o.paidAt || o.createdAt))
     .reduce((sum, o) => sum + o.total, 0);
-  return BASELINE_PENJUALAN_HARI_INI + paidToday;
 }
 
 export { db };

@@ -58,17 +58,25 @@ export default function Orders() {
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink/50">
                       {(() => {
                         const orderDate = order.paidAt || order.createdAt;
-                        const timeStr = orderDate
-                          ? new Date(orderDate).toLocaleTimeString("id-ID", {
+                        const dateObj = orderDate ? new Date(orderDate) : null;
+                        const isTodayOrder = dateObj ? dateObj.toDateString() === new Date().toDateString() : false;
+                        const timeStr = dateObj
+                          ? dateObj.toLocaleTimeString("id-ID", {
                               hour: "2-digit",
                               minute: "2-digit",
                               hour12: false,
                             }).replace(".", ":")
                           : "";
+                        const datePrefix = isTodayOrder
+                          ? "Hari ini"
+                          : dateObj?.toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                            });
                         return (
                           <span>
                             {timeStr
-                              ? `Hari ini, ${timeStr} · ${t.ordersPage.itemsUnit(order.itemCount)}`
+                              ? `${datePrefix}, ${timeStr} · ${t.ordersPage.itemsUnit(order.itemCount)}`
                               : t.ordersPage.metaLine(order.itemCount)}
                           </span>
                         );

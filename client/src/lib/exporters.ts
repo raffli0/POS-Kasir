@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { db, tablesTable, DEFAULT_TABLES, type OrderRow, type TableRow } from "./db";
+import { db, type OrderRow } from "./db";
 import { MENU_SEED, type MenuItem } from "../data/menu";
 
 function download(blob: Blob, filename: string): void {
@@ -29,20 +29,18 @@ function toCsv(headers: string[], rows: Array<Array<string | number | undefined>
 }
 
 export async function exportBackupJson(): Promise<void> {
-  const [products, orders, tables, shifts] = await Promise.all([
+  const [products, orders, shifts] = await Promise.all([
     db.products.toArray(),
     db.orders.toArray(),
-    tablesTable.toArray(),
     db.shifts.toArray(),
   ]);
 
   const payload = {
     app: "KASA Sistem Kasir",
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     products,
     orders,
-    tables,
     shifts,
   };
 
@@ -155,7 +153,6 @@ export async function exportReportExcel(
 export type ImportResult = {
   products: number;
   orders: number;
-  tables: number;
 };
 
 export async function importBackupFile(file: File): Promise<ImportResult> {
@@ -178,7 +175,6 @@ export async function importBackupFile(file: File): Promise<ImportResult> {
 
     let productsToInsert: MenuItem[] = [];
     let ordersToInsert: OrderRow[] = [];
-    let tablesToInsert: TableRow[] = [];
 
     // Case 1: Full KASA backup object
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
@@ -187,9 +183,6 @@ export async function importBackupFile(file: File): Promise<ImportResult> {
       }
       if (Array.isArray(parsed.orders)) {
         ordersToInsert = parsed.orders;
-      }
-      if (Array.isArray(parsed.tables)) {
-        tablesToInsert = parsed.tables;
       }
     }
     // Case 2: Array of products directly
@@ -205,12 +198,8 @@ export async function importBackupFile(file: File): Promise<ImportResult> {
       (o) => o && typeof o.no === "number" && typeof o.total === "number",
     );
 
-    const validTables = tablesToInsert.filter(
-      (t) => t && typeof t.id === "string" && typeof t.name === "string",
-    );
-
-    if (validProducts.length === 0 && validOrders.length === 0 && validTables.length === 0) {
-      throw new Error("Tidak ada data produk, pesanan, atau meja yang valid dalam berkas ini.");
+    if (validProducts.length === 0 && validOrders.length === 0) {
+      throw new Error("Tidak ada data produk atau pesanan yang valid dalam berkas ini.");
     }
 
     if (validProducts.length > 0) {
@@ -219,14 +208,10 @@ export async function importBackupFile(file: File): Promise<ImportResult> {
     if (validOrders.length > 0) {
       await db.orders.bulkPut(validOrders);
     }
-    if (validTables.length > 0) {
-      await tablesTable.bulkPut(validTables);
-    }
 
     return {
       products: validProducts.length,
       orders: validOrders.length,
-      tables: validTables.length,
     };
   }
 
@@ -271,17 +256,14 @@ export async function importBackupFile(file: File): Promise<ImportResult> {
   return {
     products: importedProducts.length,
     orders: 0,
-    tables: 0,
   };
 }
 
-export async function resetToDemoSeed(): Promise<{ products: number; tables: number }> {
+export async function resetToDemoSeed(): Promise<{ products: number }> {
   await db.products.clear();
   await db.products.bulkPut(MENU_SEED);
-  await tablesTable.bulkPut(DEFAULT_TABLES);
   return {
     products: MENU_SEED.length,
-    tables: DEFAULT_TABLES.length,
   };
 }
 

@@ -2,7 +2,7 @@ export const t = {
   appName: "KASA",
   appTagline: "SISTEM KASIR",
   station: "Kasir depan · Mesin 01",
-  cashier: { name: "Jamie Morgan", role: "Kasir", initials: "JM" },
+  cashier: { name: "Kasir", role: "Kasir", initials: "KS" },
   controlSection: "Kontrol",
 
   nav: {

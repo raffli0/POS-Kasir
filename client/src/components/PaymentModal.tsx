@@ -47,7 +47,7 @@ export function PaymentModal({ open, onClose }: { open: boolean; onClose: () => 
   // Generate QRIS code
   useEffect(() => {
     if (method !== "qris") return;
-    const payload = `KASA|QRIS-SIMULASI|PESANAN-${orderNo}|${totals.total}`;
+    const payload = `QRIS-SIMULASI|PESANAN-${orderNo}|${totals.total}`;
     void QRCode.toDataURL(payload, {
       width: 240,
       margin: 1,

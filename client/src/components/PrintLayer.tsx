@@ -63,6 +63,7 @@ function ReceiptPrint() {
   const currentSubtotal = lastReceipt ? (lastReceipt.subtotal ?? lastReceipt.total) : totals.subtotal;
   const currentTax = lastReceipt ? (lastReceipt.tax ?? 0) : totals.tax;
   const currentDiscount = lastReceipt ? (lastReceipt.discount ?? 0) : totals.discountAmount;
+  const currentServiceCharge = lastReceipt ? (lastReceipt.serviceCharge ?? 0) : totals.serviceCharge;
   const currentTotal = lastReceipt ? lastReceipt.total : totals.total;
   const receiptTimestamp = lastReceipt?.paidAt || lastReceipt?.createdAt || Date.now();
   const receiptDate = new Date(receiptTimestamp);
@@ -75,7 +76,7 @@ function ReceiptPrint() {
     month: "long",
     year: "numeric",
   });
-  const cashierName = lastReceipt?.cashierName || currentStaff?.name || t.cashier.name;
+  const cashierName = lastReceipt?.cashierName || (currentStaff?.id !== "unassigned" && currentStaff?.name ? currentStaff.name : "Kasir");
 
   const itemsToPrint = hasReceipt && lastReceipt?.items
     ? lastReceipt.items.map((it) => ({
@@ -159,9 +160,15 @@ function ReceiptPrint() {
                     <td className="rp-amt">-{formatIDR(currentDiscount)}</td>
                   </tr>
                 )}
+                {currentServiceCharge > 0 && (
+                  <tr>
+                    <td>Biaya Layanan ({pos.serviceChargeRate}%)</td>
+                    <td className="rp-amt">{formatIDR(currentServiceCharge)}</td>
+                  </tr>
+                )}
                 {currentTax > 0 && (
                   <tr>
-                    <td>{t.receipt.taxLabel}</td>
+                    <td>Pajak ({pos.taxRate}%)</td>
                     <td className="rp-amt">{formatIDR(currentTax)}</td>
                   </tr>
                 )}

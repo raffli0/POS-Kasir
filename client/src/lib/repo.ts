@@ -1,13 +1,11 @@
 import {
   db,
-  tablesTable,
   cashMovementsTable,
   categoriesTable,
   type OrderRow,
   type OrderStatus,
   type PayMethod,
   type ShiftRecord,
-  type TableRow,
   type CashMovementRow,
   type CashMovementType,
   type CashMovementCategory,
@@ -17,14 +15,13 @@ import type { MenuItem } from "../data/menu";
 
 export type {
   OrderRow,
-  TableRow,
   ShiftRecord,
   CashMovementRow,
   CashMovementType,
   CashMovementCategory,
   CategoryRow,
 };
-export { tablesTable, cashMovementsTable, categoriesTable };
+export { cashMovementsTable, categoriesTable };
 
 export async function loadProducts(): Promise<MenuItem[]> {
   const rows = await db.products.toArray();
@@ -37,19 +34,6 @@ export async function saveProduct(item: MenuItem): Promise<void> {
 
 export async function deleteProduct(id: string): Promise<void> {
   await db.products.delete(id);
-}
-
-export async function loadTables(): Promise<TableRow[]> {
-  const rows = await tablesTable.toArray();
-  return rows.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-}
-
-export async function saveTable(table: TableRow): Promise<void> {
-  await tablesTable.put(table);
-}
-
-export async function deleteTable(id: string): Promise<void> {
-  await tablesTable.delete(id);
 }
 
 export async function loadOrders(): Promise<OrderRow[]> {
@@ -66,7 +50,7 @@ export async function loadOrders(): Promise<OrderRow[]> {
 
 export async function nextOrderNo(): Promise<number> {
   const last = await db.orders.orderBy(":id").last();
-  return (last?.no ?? 1043) + 1;
+  return (last?.no ?? 1048) + 1;
 }
 
 export async function saveOrder(row: OrderRow): Promise<void> {

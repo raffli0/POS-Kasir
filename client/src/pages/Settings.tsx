@@ -33,7 +33,6 @@ export default function Settings() {
   const {
     products,
     reloadProducts,
-    reloadTables,
     reloadOrders,
     resetSeed,
     taxEnabled,
@@ -82,7 +81,7 @@ export default function Settings() {
     .filter((o) => o.status === "sudah-dibayar" && o.method === "tunai")
     .reduce((sum, o) => sum + o.total, 0);
 
-  const estimatedDrawerCash = (activeShift?.startingCash || 200_000) + cashSalesToday;
+  const estimatedDrawerCash = (activeShift?.startingCash || 0) + cashSalesToday;
 
   const handleTogglePrinter = () => {
     const nextId = currentDriver.id === "browser" ? "escpos-bluetooth" : "browser";
@@ -131,9 +130,9 @@ export default function Settings() {
   const handleImport = async (file: File) => {
     try {
       const res = await importBackupFile(file);
-      await Promise.all([reloadProducts(), reloadTables(), reloadOrders()]);
+      await Promise.all([reloadProducts(), reloadOrders()]);
       toast.success(t.data.importSuccess, {
-        description: `Berhasil memulihkan ${res.products} produk, ${res.orders} pesanan, dan ${res.tables} meja.`,
+        description: `Berhasil memulihkan ${res.products} produk dan ${res.orders} pesanan.`,
       });
     } catch (err) {
       toast.error(t.data.importError, {

@@ -27,20 +27,8 @@ export type OrderRow = {
   customerName?: string;
   cashierId?: string;
   cashierName?: string;
-  waiterId?: string;
-  waiterName?: string;
-  source?: "pos" | "waiter" | "self-order";
-  paymentChoice?: "paid-now" | "pay-later";
   paidAt?: number;
   createdAt: number;
-};
-
-export type TableRow = {
-  id: string;
-  name: string;
-  seats: number;
-  area: string;
-  active?: boolean;
 };
 
 export type CashMovementType = "CASH_IN" | "CASH_OUT";
@@ -98,19 +86,9 @@ export const DEFAULT_CATEGORIES: CategoryRow[] = [
   { id: "cat-camilan", name: "Camilan", kind: "Camilan", color: "emerald", sortOrder: 5, isDefault: true, createdAt: 1700000004000 },
 ];
 
-export const DEFAULT_TABLES: TableRow[] = [
-  { id: "meja-01", name: "Meja 01", seats: 2, area: "Utama" },
-  { id: "meja-02", name: "Meja 02", seats: 4, area: "Utama" },
-  { id: "meja-03", name: "Meja 03", seats: 4, area: "Utama" },
-  { id: "meja-04", name: "Meja 04", seats: 4, area: "Utama" },
-  { id: "teras-01", name: "Teras 01", seats: 6, area: "Teras" },
-  { id: "teras-02", name: "Teras 02", seats: 4, area: "Teras" },
-];
-
 export const db = new Dexie("kasa-kasir") as Dexie & {
   products: EntityTable<MenuItem, "id">;
   orders: EntityTable<OrderRow, "no">;
-  tables: EntityTable<TableRow, "id">;
   shifts: EntityTable<ShiftRecord, "id">;
   cash_movements: EntityTable<CashMovementRow, "id">;
   categories: EntityTable<CategoryRow, "id">;
@@ -160,105 +138,18 @@ db.version(6).upgrade(async (tx) => {
   });
 });
 
-const SEED_ORDERS: OrderRow[] = [
-  {
-    no: 1048,
-    status: "disimpan",
-    total: 85000,
-    subtotal: 76500,
-    tax: 8500,
-    discount: 0,
-    itemCount: 3,
-    customerName: "Budi Santoso",
-    source: "self-order",
-    paymentChoice: "pay-later",
-    items: [
-      { itemId: "kopi-susu", name: "Kopi Susu", qty: 2, price: 25000, note: "Less ice, gula aren terpisah" },
-      { itemId: "roti-panggang-isi", name: "Roti Panggang Isi", qty: 1, price: 26500, note: "Ekstra keju" },
-    ],
-    createdAt: Date.now() - 600_000,
-  },
-  {
-    no: 1047,
-    status: "sudah-dibayar",
-    total: 284000,
-    subtotal: 255855,
-    tax: 28145,
-    discount: 0,
-    itemCount: 2,
-    customerName: "Rina & Teman",
-    source: "pos",
-    paidAt: Date.now() - 3600_000,
-    paymentChoice: "paid-now",
-    items: [
-      { itemId: "nasi-goreng-spesial", name: "Nasi Goreng Spesial", qty: 2, price: 35000, note: "Pedas sedang" },
-    ],
-    createdAt: Date.now() - 3600_000,
-  },
-  {
-    no: 1046,
-    status: "sudah-dibayar",
-    total: 198000,
-    itemCount: 2,
-    method: "kartu-qr",
-    customerName: "Andi",
-    source: "pos",
-    paidAt: Date.now() - 5400_000,
-    createdAt: Date.now() - 6000_000,
-  },
-  {
-    no: 1045,
-    status: "disimpan",
-    total: 442000,
-    itemCount: 5,
-    customerName: "Pak Wijaya",
-    source: "self-order",
-    paymentChoice: "pay-later",
-    createdAt: Date.now() - 7200_000,
-  },
-  {
-    no: 1044,
-    status: "sudah-dibayar",
-    total: 118000,
-    itemCount: 1,
-    method: "tunai",
-    customerName: "Lia",
-    source: "pos",
-    paidAt: Date.now() - 9000_000,
-    createdAt: Date.now() - 9600_000,
-  },
-];
+// Clean initial orders & movements for real operational usage
+const SEED_ORDERS: OrderRow[] = [];
 
-export const tablesTable = db.table<TableRow, string>("tables");
 export const cashMovementsTable = db.table<CashMovementRow, string>("cash_movements");
 export const categoriesTable = db.table<CategoryRow, string>("categories");
 
-const SEED_MOVEMENTS: CashMovementRow[] = [
-  {
-    id: "mov-01",
-    type: "CASH_IN",
-    category: "modal_awal",
-    amount: 200000,
-    description: "Modal awal kasir buka shift",
-    cashierName: "Kasir",
-    createdAt: Date.now() - 14400_000,
-  },
-  {
-    id: "mov-02",
-    type: "CASH_OUT",
-    category: "bahan_baku",
-    amount: 25000,
-    description: "Beli Es Batu Kristal 2 Pack",
-    cashierName: "Kasir",
-    createdAt: Date.now() - 7200_000,
-  },
-];
+const SEED_MOVEMENTS: CashMovementRow[] = [];
 
 db.on("populate", (tx) => {
   void tx.table("products").bulkPut(MENU_SEED);
-  void tx.table("orders").bulkAdd(SEED_ORDERS);
-  void tx.table("tables").bulkPut(DEFAULT_TABLES);
-  void tx.table("cash_movements").bulkPut(SEED_MOVEMENTS);
+  if (SEED_ORDERS.length > 0) void tx.table("orders").bulkAdd(SEED_ORDERS);
+  if (SEED_MOVEMENTS.length > 0) void tx.table("cash_movements").bulkPut(SEED_MOVEMENTS);
   void tx.table("categories").bulkPut(DEFAULT_CATEGORIES);
 });
 
@@ -272,12 +163,10 @@ export async function ensureSeeded(): Promise<void> {
   });
   const productCount = await db.products.count();
   const orderCount = await db.orders.count();
-  const tableCount = await tablesTable.count();
   const movementCount = await cashMovementsTable.count();
   const categoryCount = await categoriesTable.count();
   if (productCount === 0) await db.products.bulkPut(MENU_SEED);
-  if (orderCount === 0) await db.orders.bulkAdd(SEED_ORDERS);
-  if (tableCount === 0) await tablesTable.bulkPut(DEFAULT_TABLES);
-  if (movementCount === 0) await cashMovementsTable.bulkPut(SEED_MOVEMENTS);
+  if (orderCount === 0 && SEED_ORDERS.length > 0) await db.orders.bulkAdd(SEED_ORDERS);
+  if (movementCount === 0 && SEED_MOVEMENTS.length > 0) await cashMovementsTable.bulkPut(SEED_MOVEMENTS);
   if (categoryCount === 0) await categoriesTable.bulkPut(DEFAULT_CATEGORIES);
 }
