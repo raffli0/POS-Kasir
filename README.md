@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🍽️ KASA POS — Sistem Kasir & Manajemen Restoran Modern
+# 🍽️ POS Kasir — Sistem Kasir & Manajemen Restoran Modern
 
 **Sistem Point of Sale (POS) Kasir, Manajemen Produk, Pemantauan Pesanan, dan Laporan Penjualan Komprehensif (Harian, Bulanan, Tahunan) Offline-First.**
 
