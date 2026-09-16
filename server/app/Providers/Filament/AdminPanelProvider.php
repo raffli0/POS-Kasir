@@ -29,7 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->colors([
-                'primary' => Color::Lime,
+                'primary' => Color::Amber,
             ])
             ->favicon(asset('favicon.svg'))
             ->brandName('KASA')

@@ -54,7 +54,7 @@ export function ProductCard({
         </p>
         <p className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-ink/45">
           <Clock size={12} aria-hidden="true" />
-          {item.kind} · {item.prepMinutes} {t.catalog.minutesSuffix}
+          {item.category} · {item.prepMinutes} {t.catalog.minutesSuffix}
         </p>
       </div>
     </button>

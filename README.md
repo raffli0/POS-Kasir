@@ -2,7 +2,7 @@
 
 # 🍽️ KASA POS — Sistem Kasir & Manajemen Restoran Modern
 
-**Sistem Point of Sale (POS), Layar Dapur KDS, Multi-Pelayan, Self-Order QR, dan Manajemen Restoran Offline-First.**
+**Sistem Point of Sale (POS) Kasir, Manajemen Produk, Pemantauan Pesanan, dan Laporan Penjualan Komprehensif (Harian, Bulanan, Tahunan) Offline-First.**
 
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -22,16 +22,27 @@
 
 ## 🌟 Ringkasan Keunggulan
 
-KASA dirancang khusus untuk kebutuhan operasional kuliner (restoran, cafe, warung, kedai kopi) yang membutuhkan **kecepatan tinggi, stabilitas tanpa internet (offline-first), dan kolaborasi multi-perangkat di jaringan lokal**.
+KASA dirancang khusus untuk kebutuhan operasional kuliner modern (restoran, cafe, kedai kopi, warung makan, dan bakery) yang mengutamakan **kecepatan transaksi, keandalan tanpa koneksi internet (offline-first), serta laporan analitik penjualan yang akurat dan terperinci**.
 
-- ⚡ **100% Offline-First**: Data tersimpan di browser via IndexedDB (Dexie.js). Aplikasi tetap beroperasi lancar meskipun internet terputus.
-- 📱 **QR Self-Order Meja**: Pelanggan memindai QR di meja mereka, memilih menu, dan pesanan langsung masuk ke antrean dapur secara otomatis.
-- 👨‍🍳 **Kitchen Display System (KDS)**: Antrean memasak visual untuk koki dengan indikator waktu, kartu tiket multi-pelayan, dan update status real-time.
-- 🚶 **Mode Pelayan Keliling (Waitstaff)**: Antarmuka mobile responsif dengan isolasi keranjang per pelayan dan indikator pencegahan tabrakan meja (*Table Lock*).
-- 🔫 **Multi-Engine Barcode & QR Scanner**: Mendukung *Hardware Scanner Gun* USB/Bluetooth HID, pemindai kamera ZXing (1D/2D), unggah gambar, dan audio beep sintetis Web Audio API.
-- 👥 **Role-Based Access Control (RBAC)**: Proteksi PIN 4 digit untuk Kasir/Admin, Pelayan, Dapur, dan Manajer dengan pembatasan hak akses rute (*RouteGuard*).
-- 🖨️ **Thermal Receipt Printer Bluetooth & USB**: Driver ESC/POS biner untuk kertas 58mm & 80mm via Web Bluetooth API tanpa aplikasi pihak ketiga.
-- 💰 **Laci Kas & Rekonsiliasi Shift**: Buka/tutup shift kasir, pencatatan modal awal, dan deteksi otomatis selisih kas fisik vs sistem.
+- ⚡ **100% Offline-First (Dexie IndexedDB)**: Data transaksi, menu produk, dan riwayat penjualan tersimpan aman di browser lokal. Aplikasi tetap beroperasi penuh meskipun koneksi internet terputus.
+- 🚀 **Alur Kasir Cepat & Direct Checkout**: Alur transaksi kasir yang ringkas, responsif, dan bebas hambatan — langsung pilih menu, sesuaikan varian/catatan, hitung diskon & pajak, dan tuntaskan pembayaran.
+- 📊 **Laporan Penjualan Komprehensif (Harian, Bulanan, Tahunan)**:
+  - **Laporan Harian**: Ringkasan omset hari ini, grafik penjualan per jam (08:00–19:00) dengan penanda jam puncak (*amber peak highlight*), rincian blok waktu (sarapan, siang, santai sore, makan malam), dan item terlaris.
+  - **Laporan Bulanan**: Grafik penjualan mingguan (Mg 1–Mg 5), deteksi Hari Terbaik dalam seminggu, rasio transaksi Tunai vs QRIS, dan tabel rincian performa per minggu.
+  - **Laporan Tahunan**: Grafik penjualan 12 bulan (Jan–Des) dengan penanda bulan terbaik (*best month*), perbandingan pertumbuhan tahunan, dan rincian transaksi bulanan.
+  - **Ekspor Excel & Cetak PDF**: Dukungan ekspor laporan multi-sheet ke Microsoft Excel (`.xlsx`) dan cetak dokumen laporan resmi / PDF.
+- 👥 **Manajemen Akun Kasir (CRUD) & Proteksi PIN 4-Digit**:
+  - Ganti peran dan kasir bertugas secara instan (*Quick Switch Modal*) tanpa logout sesi.
+  - Tambah, ubah, dan hapus akun kasir mandiri lengkap dengan foto avatar dan shift kerja.
+  - Nama kasir yang bertugas otomatis tercetak pada struk pembayaran (*receipt*).
+- 📦 **Katalog & Manajemen Produk**:
+  - Pengelolaan produk makanan dan minuman, harga jual, kategori menu, dan SKU barcode.
+  - Pencarian cepat instan (`Ctrl + K`) dan filter kategori interaktif.
+- 🖨️ **Pencetakan Struk Thermal & Browser**:
+  - Driver printer thermal ESC/POS biner via Web Bluetooth API (58mm & 80mm).
+  - Dialog cetak browser (`window.print()`) dengan proteksi cetak bersih tanpa kebocoran elemen UI atau notifikasi.
+- 💾 **Pencadangan & Pemulihan Data (Backup & Restore)**:
+  - Ekspor/impor cadangan database lengkap (`.json`) serta ekspor katalog produk (`.csv`).
 
 ---
 
@@ -39,98 +50,87 @@ KASA dirancang khusus untuk kebutuhan operasional kuliner (restoran, cafe, warun
 
 | Modul | Tampilan Antarmuka |
 | :--- | :--- |
-| **Kasir Utama (POS)**<br/>*Pencarian instan, multi-cart, diskon, QRIS, & cetak struk* | ![Kasir POS](docs/images/01-pos-kasir.png) |
-| **QR Self-Order Pelanggan**<br/>*Scan di meja, pesan menu, & lacak status masak live* | ![Self Order](docs/images/33-customer-self-order-menu.png) |
-| **Layar Dapur (KDS)**<br/>*Tiket pesanan real-time, timer masak, & tombol siap saji* | ![Layar Dapur](docs/images/02-dapur-kds.png) |
-| **Mode Fokus Pelayan**<br/>*Input pesanan keliling, sesi terisolasi, & denah meja* | ![Mode Pelayan](docs/images/28-pelayan-2-siti-terisolasi.png) |
-| **Pemindai Barcode & QR**<br/>*Kamera ZXing, Scanner Gun USB, audio beep, & keypad* | ![Barcode Scanner](docs/images/41-barcode-scanner-modal-camera.png) |
-| **Pusat Jaringan & Sinkronisasi**<br/>*Pairing QR untuk HP pelayan, layar dapur, & WiFi meja* | ![Pusat Jaringan](docs/images/38-pusat-jaringan-wifi-qr-scannable.png) |
-| **Laci Kas & Rekonsiliasi**<br/>*Perhitungan fisik uang laci vs rekap penjualan shift* | ![Laci Kas](docs/images/10-laci-kas.png) |
-| **Katalog & Gambar Produk**<br/>*Upload foto lokal, pencarian Google, & galeri kuliner* | ![Katalog Produk](docs/images/04-katalog-produk.png) |
-| **Manajemen Meja Restoran**<br/>*Denah area (Utama, VIP, Teras) & generator cetak QR Meja* | ![Manajemen Meja](docs/images/03-manajemen-meja.png) |
-| **Laporan Penjualan**<br/>*Grafik omset, rekap metode bayar, & ekspor data Excel* | ![Laporan Penjualan](docs/images/05-laporan-penjualan.png) |
+| **Kasir Utama (POS)**<br/>*Pencarian instan, keranjang interaktif, diskon, QRIS, & cetak struk* | ![Kasir POS](docs/images/01-pos-kasir.png) |
+| **Daftar Pesanan**<br/>*Pemantauan pesanan berjalan, status disimpan, siap, & sudah dibayar* | ![Daftar Pesanan](docs/images/03-daftar-pesanan.png) |
+| **Katalog & Produk**<br/>*Manajemen menu, penetapan harga, kategori, foto, & SKU barcode* | ![Katalog Produk](docs/images/04-katalog-produk.png) |
+| **Laporan Penjualan**<br/>*Grafik penjualan interaktif, rasio Tunai vs QRIS, & ekspor Excel/PDF* | ![Laporan Penjualan](docs/images/05-laporan-penjualan.png) |
+| **Pengaturan & Akun Kasir**<br/>*Kelola nama toko, printer struk, pajak, akun kasir, & backup data* | ![Pengaturan](docs/images/06-pengaturan-shift.png) |
+| **Pembayaran QRIS**<br/>*Kode QRIS dinamis untuk pembayaran non-tunai langsung* | ![QRIS Kasir](docs/images/40-kasir-qris-scannable-matrix.png) |
 
 ---
 
-## 🔑 Akun & PIN Default (Role-Based Access)
+## 🔑 Manajemen Akun Kasir & Identitas Struk
 
-Sistem dilengkapi tombol ganti akun cepat (*Quick Switch*) dengan proteksi PIN 4 digit:
+Sistem dilengkapi fitur pengelolaan kasir mandiri (**CRUD: Tambah, Ubah, Hapus**) dengan proteksi PIN 4 digit:
 
-| Nama Staf | Peran (*Role*) | PIN Default | Hak Akses Rute |
-| :--- | :--- | :--- | :--- |
-| **Jamie Morgan** | `Kasir & Admin` | `1234` | Akses penuh: POS, Meja, Produk, Laci Kas, Laporan, Pengaturan, Pelayan, Dapur |
-| **Budi Santoso** | `Pelayan 1` | `2222` | Khusus Mode Pelayan (`/pelayan`) & Pesanan Meja |
-| **Siti Rahma** | `Pelayan 2` | `2223` | Khusus Mode Pelayan (`/pelayan`) & Pesanan Meja |
-| **Agus Pratama** | `Pelayan 3` | `2224` | Khusus Mode Pelayan (`/pelayan`) & Pesanan Meja |
-| **Chef Junaedi** | `Kepala Dapur` | `3333` | Khusus Layar Dapur KDS (`/dapur`) |
-| **Hendra Wijaya** | `Manajer` | `8888` | Laporan Keuangan, Ringkasan Pesanan, Laci Kas, Pengaturan, & Meja |
+- **Daftar Kasir Dinamis**: Buka menu **Pengaturan > Akun Kasir & Staf**, lalu kelola nama kasir, PIN 4 digit, keterangan shift, dan warna avatar.
+- **Ganti Kasir Cepat (*Quick Switch*)**: Klik tombol profil avatar kasir di pojok kanan atas untuk berpindah kasir bertugas secara instan menggunakan otentikasi PIN.
+- **Identitas Otomatis pada Struk**: Setiap pesanan yang dibayar secara otomatis menyematkan nama kasir yang sedang aktif bertugas pada struk cetak browser maupun printer thermal bluetooth ESC/POS.
 
 ---
 
 ## 🛠️ Fitur & Modul Utama
 
 ### 1. 🛒 Kasir & Transaksi POS (`/`)
-- **Pencarian Cepat (`Ctrl + K`)**: Cari menu berdasarkan nama atau SKU barcode.
-- **Multi-Tab Cart Meja**: Simpan draf transaksi di beberapa meja tanpa takut data hilang saat beralih.
-- **Kustomisasi Pesanan**: Tambahkan catatan per item (*less sugar, tanpa bawang, pedas sedang*).
-- **Kalkulasi Otomatis**: Subtotal, diskon (persen/nominal), biaya layanan (*Service Charge*), dan Pajak Pertambahan Nilai (PPN 11%).
-- **Multi-Metode Pembayaran**: Tunai dengan kalkulator uang kembalian cepat, QRIS Dinamis Mandiri, Kartu Debit/Kredit, dan Transfer Bank.
+- **Pencarian Cepat**: Temukan menu dalam hitungan milidetik berdasarkan nama atau SKU barcode.
+- **Kustomisasi Pesanan**: Tambahkan catatan khusus per menu (*less sugar, tanpa es, ekstra pedas*).
+- **Kalkulasi Otomatis**: Subtotal, diskon (persen maupun nominal), biaya layanan (*Service Charge*), dan Pajak (PPN).
+- **Metode Pembayaran Lengkap**: Tunai dengan kalkulator uang kembalian instan, QRIS Dinamis, Kartu Debit/Kredit, dan Transfer Bank.
+- **Penyimpanan Draf Pesanan**: Pesanan dapat disimpan sementara (*hold order*) dan diselesaikan kemudian.
 
-### 2. 📲 QR Self-Order Pelanggan (`/order/:tableId`)
-- **Tanpa Unduh Aplikasi**: Pelanggan cukup scan QR Code yang tertempel di meja makan mereka.
-- **Bypass Kasir & Pelayan**: Pesanan langsung diteruskan ke Kitchen Display System (KDS) di dapur.
-- **Live Cooking Status**: Pelanggan dapat memantau proses memasak (*Pesanan Diterima* ➔ *Sedang Dimasak* ➔ *Siap Diantar ke Meja*).
-- **Opsi Bayar Fleksibel**: Pembayaran langsung di meja via QRIS atau opsi bayar di kasir saat selesai makan.
+### 2. 📋 Pemantauan Pesanan (`/pesanan`)
+- **Daftar Pesanan Real-time**: Melacak seluruh transaksi yang sedang berlangsung maupun yang telah diselesaikan hari ini.
+- **Filter Status Pesanan**: Filter cepat berdasarkan status (*Disimpan*, *Siap*, *Sudah Dibayar*).
+- **Buka & Selesaikan Pesanan**: Muat kembali pesanan yang tersimpan langsung ke kasir untuk proses pembayaran.
 
-### 3. 👨‍🍳 Layar Dapur / Kitchen Display System (`/dapur`)
-- **Realtime Ticket Queue**: Tiket pesanan masuk seketika dari kasir, pelayan, maupun pelanggan self-order.
-- **Status 3 Tahap**: Tombol transisi cepat `Mulai Masak` ➔ `Siap Disajikan` ➔ `Selesai`.
-- **Timer & Urgent Alert**: Penghitung waktu otomatis dengan tanda peringatan visual untuk pesanan di atas 15 menit.
-- **Indikator Asal Pesanan**: Label jelas untuk membedakan pesanan Pelayan (Budi/Siti), Kasir, atau Self-Order Meja.
+### 3. 📦 Manajemen Katalog & Produk (`/produk`)
+- **Manajemen Menu**: Tambah baru, edit data, dan hapus menu makanan atau minuman.
+- **Integrasi Barcode**: Tetapkan kode barcode/SKU unik pada setiap menu untuk kemudahan pemindaian dengan scanner gun.
+- **Kategori & Foto Kuliner**: Pengelompokan kategori yang rapi serta dukungan foto produk.
 
-### 4. 🚶 Mode Pelayan Fokus (`/pelayan`)
-- **Isolasi Draft**: Sesi keranjang tersimpan per staf (`kasa_waiter_cart_${staffId}`) mencegah tumpang tindih pesanan.
-- **Table Lock Protection**: Memberi tahu jika meja tertentu sedang aktif ditangani oleh pelayan lain.
-- **3 Tab Operasional**: *1. Catat Pesanan*, *2. Pesanan Saya (Active Orders)*, dan *3. Denah Meja (Layout)*.
+### 4. 📈 Laporan Penjualan Analitik (`/laporan`)
+- **Tab 1: Laporan Harian**:
+  - 4 Kartu KPI: Total Penjualan (+% vs kemarin), Jumlah Transaksi (+transaksi), Rata-rata / Transaksi, dan Rasio Tunai vs QRIS.
+  - Grafik Penjualan per Jam (08:00–19:00) dengan sorotan khusus warna emas (*Amber Peak*) pada jam tersibuk.
+  - Tabel rincian 4 blok waktu operasional (`08:00–11:00`, `11:00–14:00`, `14:00–17:00`, `17:00–20:00`) lengkap dengan item terlaris dan omzet.
+- **Tab 2: Laporan Bulanan**:
+  - 4 Kartu KPI: Total Penjualan (+% vs bulan lalu), Jumlah Transaksi, Hari Terbaik (hari dengan omzet tertinggi), dan Rasio Tunai vs QRIS.
+  - Grafik Penjualan per Minggu (Mg 1–Mg 5) dengan sorotan minggu tertinggi.
+  - Tabel performa mingguan lengkap dengan rata-rata harian.
+- **Tab 3: Laporan Tahunan**:
+  - 4 Kartu KPI: Total Penjualan (+% vs tahun sebelumnya), Jumlah Transaksi, Bulan Terbaik (*Best Month*), dan Rasio Tunai vs QRIS.
+  - Grafik Penjualan 12 Bulan (Januari – Desember) dengan sorotan bulan puncak.
+  - Tabel performa tahunan dengan rata-rata per transaksi tiap bulan.
+- **Navigasi Periode Fleksibel**: Geser mundur/maju tanggal, bulan, atau tahun, pemilih kalender tanggal langsung, dan tombol kembali ke "Sekarang".
+- **Ekspor Excel & Cetak**: Ekspor multi-sheet ke format Microsoft Excel (`.xlsx`) dan cetak laporan PDF rapi.
 
-### 5. 🔫 Sistem Barcode & QR Multi-Engine
-- **Hardware Barcode Gun (USB / Bluetooth HID)**: Menangkap ketukan berkecepatan tinggi scanner fisik secara pasif di kasir tanpa perlu klik form.
-- **Kamera Scanner (ZXing Multi-Format)**: Memindai barcode 1D (*EAN-13, EAN-8, Code 128, Code 39, UPC*) dan 2D (*QR Code, Data Matrix*) dengan algoritma `TRY_HARDER`.
-- **Web Audio Beep**: Synthesizer audio asli (*high chime* saat sukses dan *low buzz* saat error) tanpa ketergantungan file audio eksternal.
-- **4 Tab Pemindai**: *Kamera Langsung* (dengan targeting reticle dan laser), *Unggah Foto*, *Ketik Manual*, dan *Demo Cepat*.
-
-### 6. 💵 Laci Kas & Rekonsiliasi Shift (`/laci-kas` & `/pengaturan`)
-- **Buka Shift**: Pencatatan kasir bertugas dan modal awal uang kembalian.
-- **Tutup Shift & Rekonsiliasi**: Input hitungan fisik uang kertas & koin, sistem otomatis membandingkan dengan total penerimaan tunai sistem dan mendeteksi selisih (pas, surplus, minus).
-- **Riwayat Shift**: Log riwayat shift tersimpan rapi untuk kebutuhan pembukuan.
-
-### 7. 🖨️ Hardware Thermal Receipt Printer (ESC/POS)
-- **Web Bluetooth GATT**: Terhubung langsung ke printer thermal portable 58mm / 80mm tanpa driver software desktop.
-- **Format Struk Lengkap**: Header nama resto, nomor meja/pelanggan, daftar pesanan + catatan, rincian diskon/pajak, QRIS, dan footer struk.
-- **Fallback Cetak Standar**: Opsi dialog print browser (`window.print()`) untuk printer kabel USB/LAN.
-
-### 8. 🌐 Pusat Jaringan & Panduan Server Lokal
-- **Pairing QR Code**: Menampilkan IP jaringan lokal (contoh: `192.168.18.14:5173`) untuk menghubungkan HP pelayan dan tablet dapur dengan satu scan.
-- **WiFi QR Generator**: Buat dan cetak kartu QR WiFi restoran untuk pelanggan.
+### 5. ⚙️ Pengaturan Sistem & Toko (`/pengaturan`)
+- **Identitas Restoran**: Atur nama restoran, alamat, nomor telepon, dan pesan catatan kaki struk.
+- **Pengaturan Pajak & Biaya**: Sesuaikan persentase PPN dan biaya layanan restoran.
+- **Uji Coba Printer Struk**: Cek koneksi printer dan lakukan cetak struk percobaan.
+- **Cadangan Data (Backup & Restore)**: Unduh salinan data lokal aplikasi (`.json`), ekspor CSV, dan pulihkan data kapan pun dibutuhkan.
 
 ---
 
-## 🏗️ Struktur Arsitektur & Folder
+## 🏗️ Struktur Folder Proyek
 
 ```text
-├── client/                      # Frontend SPA (React 19 + TypeScript + Vite + Tailwind 4)
+├── client/                      # Frontend Aplikasi POS (React 19 + TypeScript + Vite + Tailwind 4)
 │   ├── public/                  # Ikon PWA, manifest, favicon
-│   ├── scripts/                 # Otomasi pengujian E2E & visual Puppeteer
 │   └── src/
-│       ├── components/          # Komponen UI, BarcodeScanner, CartPanel, RouteGuard, Modals
-│       ├── hooks/               # Custom hooks (useBarcodeGunScanner, etc.)
-│       ├── lib/                 # Database Dexie.js, Audio Feedback, Exporters, Sync Bus
-│       ├── pages/               # Home (Kasir), WaiterOrder, Kitchen, CustomerSelfOrder,
-│       │                        # CashDrawer, Orders, Tables, Products, Reports, Settings
-│       └── services/            # ESC/POS binary encoder & Bluetooth GATT driver
-├── docs/                        # Tangkapan layar antarmuka & dokumentasi panduan
-├── server/                      # Backend opsional (Laravel 11 REST API)
-└── capacitor/                   # Konfigurasi wrapper native Android/iOS
+│       ├── components/          # Komponen UI, Header, Sidebar, CartPanel, BarcodeScanner, Modals
+│       │   └── ui/              # Komponen reusable (Button, Input, dll.)
+│       ├── data/                # Data seed awal menu makanan & minuman
+│       ├── lib/                 # Database Dexie.js (IndexedDB), Engine Laporan (reports.ts), Exporters
+│       ├── locales/             # Kamus bahasa & pelokalan teks sistem
+│       └── pages/               # Halaman utama aplikasi:
+│           ├── Home.tsx         # POS Kasir Utama
+│           ├── Orders.tsx       # Daftar & Manajemen Pesanan
+│           ├── Products.tsx     # Katalog & Pengelolaan Produk
+│           ├── Reports.tsx      # Laporan Penjualan (Harian, Bulanan, Tahunan)
+│           └── Settings.tsx     # Pengaturan Toko, Kasir, & Printer
+├── docs/                        # Dokumentasi visual & gambar tangkapan layar antarmuka
+└── package.json                 # Skrip otomasi root proyek (dev, build, check)
 ```
 
 ---
@@ -140,47 +140,50 @@ Sistem dilengkapi tombol ganti akun cepat (*Quick Switch*) dengan proteksi PIN 4
 ### Kebutuhan Sistem
 - **Node.js**: versi 18.0.0 atau lebih baru
 - **Package Manager**: `npm`, `pnpm`, atau `yarn`
-- **Browser Modern**: Google Chrome, Microsoft Edge, atau browser berbasis Chromium (disarankan untuk Web Bluetooth & Barcode Scanner API).
+- **Browser**: Google Chrome, Microsoft Edge, atau browser berbasis Chromium (disarankan untuk Web Bluetooth & Barcode Scanner API).
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/Binis-code/kasir-restoran.git
-cd kasir-restoran
+git clone https://github.com/raffli0/POS-Kasir
+cd POS-Kasir
 ```
 
-### 2. Jalankan Frontend KASA
+### 2. Pasang Dependensi
 ```bash
 cd client
 npm install
+```
+
+### 3. Jalankan Aplikasi (Development Mode)
+Dari folder utama proyek, Anda dapat langsung menjalankan:
+```bash
 npm run dev
 ```
-Aplikasi kasir akan aktif di `http://localhost:5173`.
+*(Atau `npm run dev` dari dalam folder `client`).*
 
-### 3. Hubungkan Perangkat di Jaringan WiFi yang Sama
-- Dapatkan alamat IP laptop kasir (misal: `http://192.168.1.10:5173`).
-- Buka di HP Pelayan: `http://192.168.1.10:5173/pelayan`
-- Buka di Tablet Dapur: `http://192.168.1.10:5173/dapur`
-- Buka QR Meja Pelanggan: `http://192.168.1.10:5173/order/meja-01`
+Aplikasi kasir akan aktif dan dapat diakses di:
+👉 **`http://localhost:5173`**
 
-### 4. Build untuk Produksi
+### 4. Pemeriksaan Tipe & Validasi Kode
 ```bash
-cd client
+npm run check
+```
+
+### 5. Kompilasi untuk Produksi (Production Build)
+```bash
 npm run build
 ```
-Hasil build statis dan Service Worker PWA siap di-deploy di folder `client/dist`.
+Hasil build statis beserta Service Worker PWA siap di-deploy pada folder `client/dist`.
 
 ---
 
-## 🧪 Pengujian Otomatis (E2E Testing)
+## 🧪 Pintasan Keyboard Kasir (Shortcuts)
 
-KASA dilengkapi suite pengujian otomatis berbasis Puppeteer untuk memverifikasi fungsionalitas dan mencegah regresi visual:
-
-```bash
-cd client
-node scripts/test-barcode-qr-fix.mjs     # Uji scanner kamera, demo, hardware gun, & table QR
-node scripts/test-multi-waiter.mjs       # Uji sesi terisolasi multi-pelayan & table locking
-node scripts/test-self-order.mjs         # Uji alur self-order meja ke KDS real-time
-```
+| Tombol | Aksi |
+| :--- | :--- |
+| `Ctrl + K` / `Cmd + K` | Buka pencarian instan produk menu |
+| `Escape` | Tutup modal / popup yang sedang aktif |
+| `F11` | Beralih mode layar penuh (*Fullscreen POS*) |
 
 ---
 

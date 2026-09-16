@@ -15,7 +15,7 @@ export function KasaMark({ size = 36 }: { size?: number }) {
         fill="#EEF0EB"
       />
       <rect x="12" y="10" width="8" height="2" rx="1" fill="#14211F" />
-      <rect x="12" y="14" width="5" height="2" rx="1" fill="#C7F36B" />
+      <rect x="12" y="14" width="5" height="2" rx="1" fill="#C88A33" />
       <rect x="12" y="18" width="8" height="2" rx="1" fill="#14211F" opacity="0.55" />
     </svg>
   );

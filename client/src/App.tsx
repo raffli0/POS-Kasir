@@ -9,14 +9,9 @@ import { QuickSwitchRoleModal } from "./components/QuickSwitchRoleModal";
 import { RouteGuard } from "./components/RouteGuard";
 import Home from "./pages/Home";
 import Orders from "./pages/Orders";
-import Tables from "./pages/Tables";
 import Products from "./pages/Products";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
-import Kitchen from "./pages/Kitchen";
-import CustomerSelfOrder from "./pages/CustomerSelfOrder";
-import WaiterOrder from "./pages/WaiterOrder";
-import CashDrawer from "./pages/CashDrawer";
 
 export default function App() {
   return (
@@ -24,17 +19,7 @@ export default function App() {
       <PosProvider>
         <PrintProvider>
           <Switch>
-            {/* 1. Standalone Customer Self-Order QR */}
-            <Route path="/order" component={CustomerSelfOrder} />
-            <Route path="/order/:tableId" component={CustomerSelfOrder} />
-
-            {/* 2. Standalone Fullscreen Focus Mode for Waiter */}
-            <Route path="/pelayan" component={WaiterOrder} />
-
-            {/* 3. Standalone Fullscreen Focus Mode for Kitchen KDS */}
-            <Route path="/dapur" component={Kitchen} />
-
-            {/* 4. Standard Dashboard with Dynamic Role-Filtered Sidebar */}
+            {/* 1. Standard Dashboard with Dynamic Role-Filtered Sidebar */}
             <Route>
               <div className="screen-root flex min-h-screen bg-mineral">
                 <Sidebar />
@@ -45,19 +30,9 @@ export default function App() {
                         <Home />
                       </RouteGuard>
                     </Route>
-                    <Route path="/laci-kas">
-                      <RouteGuard path="/laci-kas" moduleName="Laci Kas & Rekonsiliasi">
-                        <CashDrawer />
-                      </RouteGuard>
-                    </Route>
                     <Route path="/pesanan">
                       <RouteGuard path="/pesanan" moduleName="Daftar Pesanan">
                         <Orders />
-                      </RouteGuard>
-                    </Route>
-                    <Route path="/meja">
-                      <RouteGuard path="/meja" moduleName="Manajemen Meja">
-                        <Tables />
                       </RouteGuard>
                     </Route>
                     <Route path="/produk">
@@ -89,7 +64,7 @@ export default function App() {
 
           <QuickSwitchRoleModal />
           <PrintLayer />
-          <Toaster position="top-center" richColors closeButton duration={3200} />
+          <Toaster position="top-center" richColors closeButton duration={3200} className="print:hidden" />
         </PrintProvider>
       </PosProvider>
     </AuthProvider>

@@ -3,9 +3,16 @@
 @theme {
   --color-mineral: #eef0eb;
   --color-ink: #14211f;
-  --color-counterlime: #c7f36b;
-  --color-counterlime-dark: #82b02a;
+  --color-primary: #c88a33;
+  --color-primary-dark: #b07528;
+  --color-counterlime: #c88a33;
+  --color-counterlime-dark: #b07528;
   --color-coral: #bf493e;
+  --color-coral-dark: #a33c32;
+  --color-success: #15803d;
+  --color-success-dark: #166534;
+  --color-warning: #d97706;
+  --color-warning-dark: #b45309;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
@@ -15,13 +22,16 @@
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgb(20 33 31 / 0.16);
   border-radius: 9999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(20 33 31 / 0.35);
 }
@@ -29,6 +39,7 @@
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -75,6 +86,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -135,20 +147,43 @@ button {
 }
 
 @media print {
-  .screen-root {
+
+  /* Sembunyikan seluruh UI layar, modal, backdrop, dan notifikasi toast */
+  .screen-root,
+  [data-sonner-toaster],
+  [data-sonner-toaster] *,
+  [data-sonner-toast],
+  [data-sonner-toast] *,
+  [data-sonner-toasts],
+  .toaster,
+  .sonner-toast,
+  section[aria-label*="Notification" i],
+  [role="dialog"],
+  [aria-modal="true"],
+  .fixed {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 
   #print-root {
     display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+  }
+
+  #print-root * {
+    visibility: visible !important;
   }
 
   @page {
-    margin: 8mm;
+    margin: 6mm;
   }
 
   body {
     background: #ffffff !important;
+    color: #000000 !important;
   }
 }
 
@@ -241,6 +276,24 @@ button {
 
 .rp-muted {
   color: rgb(20 33 31 / 0.65);
+}
+
+.rp-meta {
+  color: #14211f;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.rp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.rp-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .rp-center {

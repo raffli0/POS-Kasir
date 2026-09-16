@@ -1,15 +1,16 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "../../lib/cn";
 
-type Variant = "primary" | "ink" | "outline" | "ghost" | "danger-ghost";
+type Variant = "primary" | "ink" | "outline" | "ghost" | "danger" | "danger-ghost";
 type Size = "sm" | "md" | "lg";
 
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-counterlime text-ink hover:bg-[#d3f885] shadow-sm",
-  ink: "bg-ink text-mineral hover:bg-[#1f332f]",
+  primary: "bg-primary text-ink shadow-sm hover:bg-primary-dark",
+  ink: "bg-ink text-mineral",
   outline:
     "border border-ink/15 bg-white text-ink hover:border-ink/35 hover:bg-white",
   ghost: "text-ink/70 hover:bg-ink/5 hover:text-ink",
+  danger: "bg-coral text-white shadow-sm hover:bg-coral-dark",
   "danger-ghost": "text-coral hover:bg-coral/10",
 };
 

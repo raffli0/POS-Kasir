@@ -16,7 +16,7 @@ export const t = {
 
   header: {
     readyTitle: "Siap menerima pesanan.",
-    allSaved: "Semua perubahan tersimpan",
+    // allSaved: "Semua perubahan tersimpan",
     notifications: "Notifikasi",
     profileOf: (name: string, role: string) => `${name} · ${role}`,
     dateToday: new Intl.DateTimeFormat("id-ID", {
@@ -36,7 +36,6 @@ export const t = {
     salesDelta: "+12,4%",
     avgOrder: "Rata-rata pesanan",
     avgWindow: "7 hari terakhir",
-    openDrawer: "Buka laci kas",
   },
 
   catalog: {
@@ -56,9 +55,6 @@ export const t = {
     orderPrefix: "PESANAN",
     title: "Pesanan saat ini",
     clear: "Hapus",
-    takeaway: "Bawa pulang",
-    tableLabel: "Meja",
-    guestsUnit: "tamu",
     emptyTitle: "Pesanan masih kosong",
     emptyBody: "Pilih produk untuk memulai pesanan.",
     productSubtotal: "Harga produk",
@@ -80,7 +76,7 @@ export const t = {
     cardHint: "Tap, masukkan kartu, atau pindai",
     cashMethod: "Tunai",
     cashHint: "Masukkan uang dari pelanggan",
-    qrisMethod: "QRIS / Dompet Digital",
+    qrisMethod: "QRIS",
     qrisHint: "Pindai kode dari aplikasi pembayaran",
     qrisSimulated: "Simulasi — pembayaran nyata butuh merchant resmi",
     qrisScanNote: "Minta pelanggan memindai kode di atas",
@@ -125,10 +121,9 @@ export const t = {
     colTotal: "Total",
     colAction: "",
     open: "Buka",
-    statusDisimpan: "Disimpan",
-    statusSiap: "Siap",
+    statusDisimpan: "Belum dibayar",
     statusDibayar: "Sudah dibayar",
-    metaLine: (items: number) => `Hari ini · Jamie Morgan · ${items} produk`,
+    metaLine: (items: number) => `Hari ini · ${items} produk`,
     itemsUnit: (n: number) => `${n} produk`,
   },
 
@@ -156,9 +151,22 @@ export const t = {
     subtitle: "Ringkasan penjualan dari data lokal perangkat ini.",
     tabHarian: "Harian",
     tabBulanan: "Bulanan",
-    netSales: "Penjualan bersih",
-    completedOrders: "Pesanan selesai",
+    tabTahunan: "Tahunan",
+    dailyTitle: "Laporan Harian",
+    dailySubtitle: "Ringkasan penjualan hari ini",
+    monthlyTitle: "Laporan Bulanan",
+    monthlySubtitle: "Ringkasan penjualan bulan ini",
+    yearlyTitle: "Laporan Tahunan",
+    yearlySubtitle: (y: number) => `Ringkasan penjualan tahun ${y}`,
+    netSales: "Total Penjualan",
+    completedOrders: "Jumlah Transaksi",
+    avgTicket: "Rata-rata / Transaksi",
+    bestDay: "Hari Terbaik",
+    bestMonth: "Bulan Terbaik",
+    cashVsQris: "Tunai vs QRIS",
     hourlyTitle: "Penjualan per jam",
+    weeklyTitle: "Penjualan per Minggu",
+    yearlyBarTitle: "Penjualan per Bulan",
     hourlyNote: "Grafik contoh operasional — data masih lokal, belum dari transaksi tersimpan.",
     jamUnit: "Rp",
     colDate: "Tanggal",
@@ -195,18 +203,6 @@ export const t = {
     expand: "Perluas sidebar",
   },
 
-  scanner: {
-    open: "Pindai barcode",
-    title: "Pindai Barcode",
-    hint: "Arahkan barcode produk ke dalam kotak",
-    close: "Tutup pemindai",
-    notFound: (code: string) => `Barcode ${code} tidak dikenali`,
-    notFoundBody: "Produk belum terdaftar. Tambahkan lewat halaman Produk.",
-    added: (name: string) => `${name} ditambahkan`,
-    cameraError: "Kamera tidak dapat diakses",
-    cameraErrorBody:
-      "Izinkan akses kamera di pengaturan browser, atau gunakan pencarian manual.",
-  },
 
   data: {
     card: "Data & cadangan",
@@ -232,8 +228,8 @@ export const t = {
 
   receipt: {
     headerTagline: "SISTEM KASIR",
-    orderTypeTakeaway: "BAWA PULANG",
-    orderTypeTable: (n: number) => `MEJA ${String(n).padStart(2, "0")}`,
+    addressLine1: "Jl. Merdeka No. 12, Bandung",
+    numberLine: "0812-3456-7890",
     cashierLine: (name: string) => `Kasir: ${name}`,
     unitPrice: (price: string) => `@${price}`,
     productSubtotal: "Harga produk",
@@ -242,8 +238,8 @@ export const t = {
     paidWithCard: "Dibayar dengan Kartu/QR",
     paidCash: (paid: string, change: string | null) =>
       change ? `Tunai: ${paid} · Kembalian: ${change}` : `Tunai: ${paid}`,
-    thanks: "Terima kasih telah berbelanja di KASA.",
-    keepReceipt: "Simpan struk ini sebagai bukti pembayaran.",
+    thanks: "Terima kasih telah berbelanja",
+    returnPolicy: "Barang yang sudah dibeli <br> tidak dapat ditukar.",
     sampleNote: "Struk percobaan — data lokal.",
   },
 } as const;

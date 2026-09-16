@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Search, Layers, Tag, ScanLine } from "lucide-react";
+import { Plus, Search, Layers, Tag } from "lucide-react";
 import { formatIDR, type MenuItem } from "../data/menu";
 import { t } from "../locales/en";
 import { Header } from "../components/Header";
@@ -8,10 +8,7 @@ import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { ProductModal } from "../components/ProductModal";
 import { CategoryManagerModal } from "../components/CategoryManagerModal";
-import { BarcodeScanner } from "../components/BarcodeScanner";
-import { useBarcodeGunScanner } from "../hooks/useBarcodeGunScanner";
 import { usePos } from "../components/PosContext";
-import { toast } from "sonner";
 import { cn } from "../lib/cn";
 
 export default function Products() {
@@ -21,23 +18,7 @@ export default function Products() {
   const [modalOpen, setModalOpen] = useState(false);
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
-  const [scannerOpen, setScannerOpen] = useState(false);
 
-  // Passive USB / Bluetooth hardware scanner listener in Products Catalog
-  useBarcodeGunScanner({
-    enabled: !modalOpen && !categoryManagerOpen && !scannerOpen,
-    onProductFound: (product) => {
-      setQuery(product.barcode);
-      setSelectedCategoryFilter("Semua");
-      toast.success(`Produk Ditemukan: ${product.name}`, {
-        description: `Barcode: ${product.barcode} • Kategori: ${product.category}`,
-      });
-    },
-    onProductNotFound: (code) => {
-      setQuery(code);
-      toast.info(`Mencari Barcode: ${code}`);
-    },
-  });
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -45,8 +26,7 @@ export default function Products() {
       const matchQuery =
         q.length === 0 ||
         item.name.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q) ||
-        item.barcode.includes(q);
+        item.category.toLowerCase().includes(q);
 
       const matchCategory =
         selectedCategoryFilter === "Semua" || item.category === selectedCategoryFilter;
@@ -107,16 +87,6 @@ export default function Products() {
                   className="h-10 w-40 sm:w-52 rounded-xl border border-ink/15 bg-white pl-9 pr-3 text-sm text-ink placeholder:text-ink/40 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
                 />
               </div>
-
-              <button
-                type="button"
-                onClick={() => setScannerOpen(true)}
-                title="Pindai Barcode Produk"
-                aria-label="Pindai Barcode Produk"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-ink/15 bg-white text-ink/70 hover:bg-counterlime hover:text-ink hover:border-counterlime-dark transition-all shadow-sm"
-              >
-                <ScanLine size={17} />
-              </button>
             </div>
 
             <Button
@@ -225,9 +195,6 @@ export default function Products() {
                     )}
                   </div>
                   <p className="truncate text-xs text-ink/50">{item.description}</p>
-                  <p className="mt-0.5 text-[11px] font-mono text-ink/40">
-                    Barcode: {item.barcode} • Jenis: {item.kind}
-                  </p>
                 </div>
                 <span className="hidden shrink-0 sm:block">
                   <Badge>{item.category}</Badge>
@@ -267,22 +234,7 @@ export default function Products() {
         onClose={() => setCategoryManagerOpen(false)}
       />
 
-      {/* Barcode Catalog Scanner */}
-      <BarcodeScanner
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        title="Pindai Barcode Katalog Produk"
-        subtitle="Arahkan barcode produk untuk mencari & memfilter secara otomatis"
-        onScanCode={(code) => {
-          setQuery(code);
-          setScannerOpen(false);
-        }}
-        onProduct={(product) => {
-          setQuery(product.barcode);
-          setSelectedCategoryFilter("Semua");
-          setScannerOpen(false);
-        }}
-      />
+
     </div>
   );
 }

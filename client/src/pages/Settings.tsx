@@ -1,18 +1,14 @@
-import { useState, useRef } from "react";
-import { useLocation } from "wouter";
+import { useState, useRef, useEffect } from "react";
 import {
   Banknote,
-  BookOpen,
   FileDown,
   FileSpreadsheet,
   FileUp,
   Percent,
   Printer,
-  Radio,
   RotateCcw,
-  Smartphone,
   Store,
-  Vault,
+  Users,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +17,10 @@ import { t } from "../locales/en";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/Button";
 import { usePos } from "../components/PosContext";
+import { useAuth } from "../components/AuthContext";
+import { CashierManagerModal } from "../components/CashierManagerModal";
+import { StoreInfoModal } from "../components/StoreInfoModal";
+import { getStoreInfo, type StoreInfo } from "../lib/storeInfo";
 import {
   exportBackupJson,
   exportProductsCsv,
@@ -28,12 +28,8 @@ import {
 } from "../lib/exporters";
 import { getPrinterDriver, setPrinterDriver } from "../services/printer";
 import { cn } from "../lib/cn";
-import { NetworkHubModal } from "../components/NetworkHubModal";
-import { LocalServerGuideModal } from "../components/LocalServerGuideModal";
-import { getNetworkHostInfo } from "../services/localSyncServer";
 
 export default function Settings() {
-  const [, setLocation] = useLocation();
   const {
     products,
     reloadProducts,
@@ -54,13 +50,14 @@ export default function Settings() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentDriver, setCurrentDriver] = useState(() => getPrinterDriver());
-  const hostInfo = getNetworkHostInfo();
+  const { staffList, currentStaff } = useAuth();
+  const [storeInfo, setStoreInfo] = useState<StoreInfo>(getStoreInfo);
 
   // Modals state
+  const [storeModalOpen, setStoreModalOpen] = useState(false);
   const [taxModalOpen, setTaxModalOpen] = useState(false);
   const [shiftModalOpen, setShiftModalOpen] = useState(false);
-  const [networkModalOpen, setNetworkModalOpen] = useState(false);
-  const [guideModalOpen, setGuideModalOpen] = useState(false);
+  const [cashierModalOpen, setCashierModalOpen] = useState(false);
 
   // Tax form state
   const [tempTaxEnabled, setTempTaxEnabled] = useState(taxEnabled);
@@ -68,11 +65,18 @@ export default function Settings() {
   const [tempScEnabled, setTempScEnabled] = useState(serviceChargeEnabled);
   const [tempScRate, setTempScRate] = useState(String(serviceChargeRate));
 
-  // Shift form state
-  const [cashierName, setCashierName] = useState("Jamie Morgan");
+  // Shift form state (defaults to active cashier)
+  const [cashierName, setCashierName] = useState(() => currentStaff.name || "Kasir");
   const [startingCash, setStartingCash] = useState("200000");
   const [actualCash, setActualCash] = useState("");
   const [closingNotes, setClosingNotes] = useState("");
+
+  // Sync cashier name whenever currentStaff changes
+  useEffect(() => {
+    if (currentStaff.name && currentStaff.id !== "unassigned") {
+      setCashierName(currentStaff.name);
+    }
+  }, [currentStaff]);
 
   const cashSalesToday = orders
     .filter((o) => o.status === "sudah-dibayar" && o.method === "tunai")
@@ -157,12 +161,11 @@ export default function Settings() {
           {/* Toko */}
           <SettingsCard
             icon={<Store size={19} aria-hidden="true" />}
-            label={t.settingsPage.storeNameCard}
-            value={t.settingsPage.storeNameValue}
-            actionLabel={t.settingsPage.editStore}
-            onAction={() =>
-              toast(t.toasts.storeInfoSoon, { description: t.toasts.storeInfoBody })
-            }
+            label="Identitas Toko & Struk"
+            value={storeInfo.name}
+            note={`${storeInfo.tagline} · ${storeInfo.address || "Belum ada alamat"} · Telp: ${storeInfo.phone || "-"}`}
+            actionLabel="Ubah Info Toko"
+            onAction={() => setStoreModalOpen(true)}
           />
 
           {/* Printer */}
@@ -183,6 +186,7 @@ export default function Settings() {
                     .printReceipt({
                       orderNo: 0,
                       total: "Rp 25.000",
+                      cashierName: currentStaff.name,
                       lines: [{ qty: 1, name: "Uji Struk Thermal", amount: "Rp 25.000" }],
                     })
                     .catch((err: Error) => toast.warning(err.message))
@@ -206,8 +210,8 @@ export default function Settings() {
               serviceChargeEnabled
                 ? `Pajak aktif (${taxRate}%) dan Service Charge aktif (${serviceChargeRate}%)`
                 : taxEnabled
-                ? `Pajak aktif (${taxRate}%)`
-                : "Semua pesanan dihitung tanpa pajak"
+                  ? `Pajak aktif (${taxRate}%)`
+                  : "Semua pesanan dihitung tanpa pajak"
             }
             actionLabel="Ubah Pajak"
             onAction={() => {
@@ -218,6 +222,64 @@ export default function Settings() {
               setTaxModalOpen(true);
             }}
           />
+
+          {/* Akun Kasir & Staf (CRUD) */}
+          <SettingsCard
+            icon={<Users size={19} aria-hidden="true" />}
+            label="Akun Kasir & Staf"
+            value={`${staffList.length} Akun Kasir Terdaftar`}
+            note="Kelola akun kasir, ubah nama, ganti PIN 4-digit, tambah kasir baru, atau hapus akun lama. Semua akun memiliki hak akses Kasir & Admin penuh."
+            actionLabel="Kelola Akun Kasir"
+            onAction={() => setCashierModalOpen(true)}
+            wide
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setCashierModalOpen(true)}
+                  className="gap-1.5 font-bold shadow-xs"
+                >
+                  <Users size={15} />
+                  Buka Pengelola Akun
+                </Button>
+                {staffList.length === 0 ? (
+                  <span className="text-xs text-ink/50 italic pl-2 sm:border-l sm:border-ink/10">
+                    Belum ada kasir terdaftar (Kosong)
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-1.5 pl-2 sm:border-l sm:border-ink/10">
+                    {staffList.slice(0, 5).map((s) => (
+                      <span
+                        key={s.id}
+                        title={`${s.name} (PIN: ${s.pin}) - ${s.description || "Kasir & Admin"}`}
+                        className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-lg font-display text-xs font-bold shadow-2xs transition-transform hover:scale-110",
+                          s.avatarColor,
+                          currentStaff.id === s.id && "ring-2 ring-primary ring-offset-1",
+                        )}
+                      >
+                        {s.initials}
+                      </span>
+                    ))}
+                    {staffList.length > 5 && (
+                      <span className="text-xs text-ink/50 font-bold ml-1">
+                        +{staffList.length - 5} lagi
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <span className="text-xs text-ink/60 font-medium">
+                {currentStaff.id === "unassigned" ? (
+                  <span className="text-amber-700 font-semibold">Belum ada kasir aktif</span>
+                ) : (
+                  <>Kasir aktif saat ini: <strong className="text-ink">{currentStaff.name}</strong></>
+                )}
+              </span>
+            </div>
+          </SettingsCard>
 
           {/* Shift Kasir */}
           <SettingsCard
@@ -236,50 +298,7 @@ export default function Settings() {
             actionLabel={activeShift ? "Tutup Shift" : "Buka Shift"}
             onAction={() => setShiftModalOpen(true)}
             wide
-          >
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLocation("/laci-kas")}
-              >
-                <Vault size={15} className="text-counterlime-dark" aria-hidden="true" />
-                Buka Modul Laci Kas Penuh
-              </Button>
-            </div>
-          </SettingsCard>
-
-          {/* Server Lokal & Multi-Device Host */}
-          <SettingsCard
-            icon={<Radio size={19} aria-hidden="true" />}
-            label="Server Lokal & Integrasi Multi-Device"
-            value={`${hostInfo.baseUrl} · Aktif`}
-            note="Jalankan sistem di laptop/tablet sebagai host server lokal. Terhubung ke HP Pelayan Keliling (/pelayan) & Tablet Dapur (/dapur) via WiFi tanpa kuota internet."
-            actionLabel="Pusat Jaringan & QR"
-            onAction={() => setNetworkModalOpen(true)}
-            wide
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setGuideModalOpen(true)}
-                className="gap-1.5"
-              >
-                <BookOpen size={15} />
-                📖 Panduan & Arahan Penerapan
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setNetworkModalOpen(true)}
-                className="gap-1.5"
-              >
-                <Smartphone size={15} />
-                Pairing HP Pelayan & Dapur
-              </Button>
-            </div>
-          </SettingsCard>
+          />
 
           {/* Backup */}
           <SettingsCard
@@ -500,7 +519,7 @@ export default function Settings() {
                     required
                     value={cashierName}
                     onChange={(e) => setCashierName(e.target.value)}
-                    placeholder="Contoh: Jamie Morgan"
+                    placeholder={`Contoh: ${currentStaff.name || "Kasir"}`}
                     className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-counterlime/60"
                   />
                 </div>
@@ -544,7 +563,7 @@ export default function Settings() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-ink/60">Total Penjualan Tunai:</span>
-                    <span className="font-bold text-counterlime-dark">+{formatIDR(cashSalesToday)}</span>
+                    <span className="font-bold text-primary-dark">+{formatIDR(cashSalesToday)}</span>
                   </div>
                   <div className="border-t border-ink/10 pt-1.5 flex justify-between font-bold text-sm">
                     <span>Uang Seharusnya di Laci:</span>
@@ -554,7 +573,7 @@ export default function Settings() {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
-                    Jumlah Uang Fisik Terhitung di Laci (Rp) <span className="text-red-500">*</span>
+                    Jumlah Uang Fisik Terhitung di Laci (Rp) <span className="text-coral">*</span>
                   </label>
                   <input
                     type="number"
@@ -563,18 +582,18 @@ export default function Settings() {
                     value={actualCash}
                     onChange={(e) => setActualCash(e.target.value)}
                     placeholder={String(estimatedDrawerCash)}
-                    className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm font-bold text-ink focus:outline-none focus:ring-2 focus:ring-counterlime/60"
+                    className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm font-bold text-ink focus:outline-none focus:ring-2 focus:ring-primary/60"
                   />
                   {actualCash && (
                     <p className="mt-1 text-xs font-bold">
                       {Number.parseInt(actualCash, 10) === estimatedDrawerCash ? (
-                        <span className="text-emerald-600">✓ Uang fisik pas (Selisih: Rp 0)</span>
+                        <span className="text-success">✓ Uang fisik pas (Selisih: Rp 0)</span>
                       ) : Number.parseInt(actualCash, 10) > estimatedDrawerCash ? (
                         <span className="text-blue-600">
                           ▲ Surplus +{formatIDR(Number.parseInt(actualCash, 10) - estimatedDrawerCash)}
                         </span>
                       ) : (
-                        <span className="text-red-500">
+                        <span className="text-coral">
                           ▼ Minus -{formatIDR(estimatedDrawerCash - Number.parseInt(actualCash, 10))}
                         </span>
                       )}
@@ -609,17 +628,17 @@ export default function Settings() {
         </div>
       )}
 
-      {/* Modal Pusat Jaringan & Pairing QR */}
-      <NetworkHubModal
-        open={networkModalOpen}
-        onClose={() => setNetworkModalOpen(false)}
+      {/* Modal Identitas Toko & Struk */}
+      <StoreInfoModal
+        open={storeModalOpen}
+        onClose={() => setStoreModalOpen(false)}
+        onSaved={(info) => setStoreInfo(info)}
       />
 
-      {/* Modal Panduan Penerapan Server Lokal */}
-      <LocalServerGuideModal
-        open={guideModalOpen}
-        onClose={() => setGuideModalOpen(false)}
-        onOpenPairingHub={() => setNetworkModalOpen(true)}
+      {/* Modal Pengelola Akun Kasir (CRUD) */}
+      <CashierManagerModal
+        open={cashierModalOpen}
+        onClose={() => setCashierModalOpen(false)}
       />
     </div>
   );
@@ -652,7 +671,7 @@ function SettingsCard({
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-counterlime text-ink">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-ink">
           {icon}
         </span>
         {actionLabel && onAction && (

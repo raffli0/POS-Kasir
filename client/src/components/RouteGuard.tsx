@@ -12,7 +12,7 @@ interface RouteGuardProps {
 }
 
 export function RouteGuard({ path, children, moduleName = "Modul ini" }: RouteGuardProps) {
-  const { currentStaff, hasAccessTo, openSwitchModal, getAllowedDefaultRoute } = useAuth();
+  const { currentStaff, hasAccessTo, openSwitchModal } = useAuth();
   const [, setLocation] = useLocation();
 
   const allowed = hasAccessTo(path);
@@ -20,8 +20,6 @@ export function RouteGuard({ path, children, moduleName = "Modul ini" }: RouteGu
   if (allowed) {
     return <>{children}</>;
   }
-
-  const defaultRoute = getAllowedDefaultRoute(currentStaff.role);
 
   return (
     <div className="flex min-h-screen flex-col bg-mineral">
@@ -60,16 +58,16 @@ export function RouteGuard({ path, children, moduleName = "Modul ini" }: RouteGu
               className="w-full gap-2 font-bold justify-center"
             >
               <KeyRound size={16} />
-              Ganti Staf / Masukkan PIN Kasir
+              Ganti Akun Kasir / Masukkan PIN
             </Button>
 
             <Button
               variant="outline"
-              onClick={() => setLocation(defaultRoute)}
+              onClick={() => setLocation("/")}
               className="w-full gap-2 text-xs justify-center"
             >
               <ArrowLeft size={14} />
-              Kembali ke Modul {currentStaff.title}
+              Kembali ke Menu Utama
             </Button>
           </div>
         </div>

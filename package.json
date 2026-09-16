@@ -1,0 +1,9 @@
+{
+  "name": "kasir-restoran",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "check": "npm --prefix client run check"
+  }
+}

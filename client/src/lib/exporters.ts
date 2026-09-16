@@ -54,10 +54,9 @@ export async function exportBackupJson(): Promise<void> {
 
 export async function exportProductsCsv(products: MenuItem[]): Promise<void> {
   const csv = toCsv(
-    ["id", "barcode", "nama", "deskripsi", "harga", "kategori", "jenis", "menit"],
+    ["id", "nama", "deskripsi", "harga", "kategori", "jenis", "menit"],
     products.map((p) => [
       p.id,
-      p.barcode,
       p.name,
       p.description,
       p.price,
@@ -75,25 +74,81 @@ export async function exportProductsCsv(products: MenuItem[]): Promise<void> {
 export type DailyRow = { key: string; date: string; orders: number; items: number; sales: number };
 export type MonthlyRow = { key: string; month: string; orders: number; items: number; sales: number };
 
+export type ComprehensiveReportExport = {
+  dailyRows?: Array<{ Waktu: string; "Item Terlaris": string; Terjual: number; Omzet: number }>;
+  hourlyRows?: Array<{ Jam: string; Transaksi: number; Omzet: number }>;
+  weeklyRows?: Array<{ Minggu: string; Transaksi: number; "Rata-rata Harian": number; Total: number }>;
+  yearlyRows?: Array<{ Bulan: string; Transaksi: number; "Rata-rata / Transaksi": number; Total: number }>;
+  summaryRows?: Array<{ Kategori: string; Metrik: string; Nilai: string | number }>;
+};
+
 export async function exportReportExcel(
   daily: DailyRow[],
   monthly: MonthlyRow[],
+  comprehensive?: ComprehensiveReportExport,
 ): Promise<void> {
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.json_to_sheet(daily.map(({ key: _k, ...rest }) => rest)),
-    "Harian",
-  );
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.json_to_sheet(monthly.map(({ key: _k, ...rest }) => rest)),
-    "Bulanan",
-  );
+
+  if (comprehensive?.summaryRows && comprehensive.summaryRows.length > 0) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(comprehensive.summaryRows),
+      "Ringkasan",
+    );
+  }
+
+  if (comprehensive?.dailyRows && comprehensive.dailyRows.length > 0) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(comprehensive.dailyRows),
+      "Harian - Rincian Waktu",
+    );
+  }
+
+  if (comprehensive?.hourlyRows && comprehensive.hourlyRows.length > 0) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(comprehensive.hourlyRows),
+      "Harian - Per Jam",
+    );
+  }
+
+  if (comprehensive?.weeklyRows && comprehensive.weeklyRows.length > 0) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(comprehensive.weeklyRows),
+      "Bulanan - Mingguan",
+    );
+  }
+
+  if (comprehensive?.yearlyRows && comprehensive.yearlyRows.length > 0) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(comprehensive.yearlyRows),
+      "Tahunan - Bulanan",
+    );
+  }
+
+  // Fallback / historical sheets
+  if (!comprehensive?.dailyRows && daily.length > 0) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(daily.map(({ key: _k, ...rest }) => rest)),
+      "Harian",
+    );
+  }
+  if (!comprehensive?.weeklyRows && monthly.length > 0) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(monthly.map(({ key: _k, ...rest }) => rest)),
+      "Bulanan",
+    );
+  }
+
   const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
   download(
     new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
-    `kasa-laporan-${dateStamp()}.xlsx`,
+    `kasa-laporan-lengkap-${dateStamp()}.xlsx`,
   );
 }
 
@@ -188,17 +243,16 @@ export async function importBackupFile(file: File): Promise<ImportResult> {
     .filter((r) => r.length >= 3 && r[1])
     .map((r, index) => {
       const id = r[0] || `item-csv-${Date.now()}-${index}`;
-      const barcode = r[1] || `899${Date.now().toString().slice(-9)}${index}`;
-      const name = r[2] || "Produk Impor";
-      const description = r[3] || "Deskripsi produk";
-      const price = Number.parseInt((r[4] || "0").replace(/\D/g, ""), 10) || 10000;
-      const category = (r[5] as any) || "Makanan";
-      const kind = (r[6] as any) || "Makanan";
-      const prepMinutes = Number.parseInt(r[7] || "5", 10) || 5;
+      const hasBarcodeCol = r.length >= 8;
+      const name = (hasBarcodeCol ? r[2] : r[1]) || "Produk Impor";
+      const description = (hasBarcodeCol ? r[3] : r[2]) || "Deskripsi produk";
+      const price = Number.parseInt(((hasBarcodeCol ? r[4] : r[3]) || "0").replace(/\D/g, ""), 10) || 10000;
+      const category = ((hasBarcodeCol ? r[5] : r[4]) as any) || "Makanan";
+      const kind = ((hasBarcodeCol ? r[6] : r[5]) as any) || "Makanan";
+      const prepMinutes = Number.parseInt((hasBarcodeCol ? r[7] : r[6]) || "5", 10) || 5;
 
       return {
         id,
-        barcode,
         name,
         description,
         price,

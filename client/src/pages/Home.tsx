@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ScanLine, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 import type { MenuItem } from "../data/menu";
 import { t } from "../locales/en";
 import { Header } from "../components/Header";
-import { MetricStrip } from "../components/MetricStrip";
 import { ProductCard } from "../components/ProductCard";
 import { CartPanel } from "../components/CartPanel";
 import { PaymentModal } from "../components/PaymentModal";
-import { BarcodeScanner } from "../components/BarcodeScanner";
-import { useBarcodeGunScanner } from "../hooks/useBarcodeGunScanner";
 import { usePos } from "../components/PosContext";
 import { cn } from "../lib/cn";
 
@@ -18,7 +15,6 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("Semua");
   const [payOpen, setPayOpen] = useState(false);
-  const [scanOpen, setScanOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -35,7 +31,6 @@ export default function Home() {
         (el instanceof HTMLElement && el.isContentEditable);
       if (
         !payOpen &&
-        !scanOpen &&
         !typing &&
         !e.metaKey &&
         !e.ctrlKey &&
@@ -48,7 +43,7 @@ export default function Home() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [payOpen, scanOpen]);
+  }, [payOpen]);
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -60,8 +55,7 @@ export default function Home() {
       const matchesQuery =
         q.length === 0 ||
         item.name.toLowerCase().includes(q) ||
-        item.description.toLowerCase().includes(q) ||
-        item.barcode.includes(q);
+        item.description.toLowerCase().includes(q);
       return inCategory && matchesQuery;
     });
   }, [pos.products, query, category]);
@@ -78,55 +72,9 @@ export default function Home() {
     }
   };
 
-  const handleScanProduct = (item: MenuItem) => {
-    pos.addItem(item.id);
-  };
-
-  const handleScanCode = (code: string) => {
-    // Check if it was a table QR code
-    const tableMatch = code.match(/order\/([a-zA-Z0-9_-]+)/) || code.match(/^meja[ -]?(\d+)$/i);
-    if (tableMatch) {
-      const slugOrNum = tableMatch[1].toLowerCase();
-      const tbl = pos.tables.find(
-        (t) =>
-          t.name.toLowerCase().replace(/\s+/g, "-") === slugOrNum ||
-          t.name.toLowerCase().includes(slugOrNum)
-      );
-      if (tbl) {
-        pos.selectTable(tbl);
-        toast.success(`Meja Berhasil Dipilih: ${tbl.name}`, {
-          description: `Area ${tbl.area || "Utama"} diaktifkan untuk pesanan ini.`,
-        });
-      }
-    }
-  };
-
-  const handleScanError = (code: string) => {
-    toast.warning(t.scanner.notFound(code), {
-      description: t.scanner.notFoundBody,
-    });
-  };
-
-  // Passive USB / Bluetooth hardware barcode gun scanner listener
-  useBarcodeGunScanner({
-    enabled: !payOpen,
-    onProductFound: (product) => {
-      pos.addItem(product.id);
-      toast.success(t.scanner.added(product.name), {
-        description: `Barcode: ${product.barcode} (Scanner Gun)`,
-      });
-    },
-    onProductNotFound: (code) => {
-      handleScanCode(code);
-    },
-  });
-
   return (
     <div className="flex flex-col min-h-screen lg:h-screen lg:overflow-hidden bg-mineral">
       <Header title={t.header.readyTitle} showSavedStatus />
-      <div className="px-5 pt-3 md:px-8 shrink-0">
-        <MetricStrip />
-      </div>
 
       <div className="flex flex-1 min-h-0 flex-col gap-4 p-4 md:px-8 md:pb-4 lg:flex-row overflow-hidden">
         <section aria-label={t.catalog.title} className="min-w-0 flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -152,21 +100,6 @@ export default function Home() {
                     className="h-9.5 w-full rounded-lg border border-ink/15 bg-white pl-9 pr-3.5 text-xs text-ink placeholder:text-ink/40 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
                   />
                 </div>
-                <button
-                  type="button"
-                  aria-label={t.scanner.open}
-                  title={t.scanner.open}
-                  onClick={() => setScanOpen(true)}
-                  className="pressable flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-lg bg-ink text-counterlime hover:bg-[#1f332f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-                >
-                  <ScanLine size={17} />
-                </button>
-                <kbd
-                  aria-hidden="true"
-                  className="kbd-hint shrink-0 rounded border border-ink/15 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-ink/50"
-                >
-                  {t.catalog.shortcutK}
-                </kbd>
               </div>
             </div>
 
@@ -220,13 +153,6 @@ export default function Home() {
       </div>
 
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} />
-      <BarcodeScanner
-        open={scanOpen}
-        onClose={() => setScanOpen(false)}
-        onProduct={handleScanProduct}
-        onScanCode={handleScanCode}
-        onError={handleScanError}
-      />
     </div>
   );
 }

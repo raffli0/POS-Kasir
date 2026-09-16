@@ -5,14 +5,18 @@ export function Badge({
   className,
   children,
 }: {
-  tone?: "neutral" | "lime" | "coral" | "dark";
+  tone?: "neutral" | "primary" | "lime" | "success" | "warning" | "danger" | "coral" | "dark";
   className?: string;
   children: React.ReactNode;
 }) {
   const tones = {
     neutral: "bg-ink/8 text-ink/70",
-    lime: "bg-counterlime text-ink",
-    coral: "bg-coral text-white",
+    primary: "bg-primary text-ink font-bold",
+    lime: "bg-primary text-ink font-bold",
+    success: "bg-emerald-100 text-emerald-800 font-semibold",
+    warning: "bg-amber-100 text-amber-900 font-semibold",
+    danger: "bg-coral text-white font-bold",
+    coral: "bg-coral text-white font-bold",
     dark: "bg-ink text-mineral",
   } as const;
   return (

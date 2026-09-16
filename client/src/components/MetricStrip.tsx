@@ -1,34 +1,17 @@
-import { Banknote, Vault } from "lucide-react";
-import { toast } from "sonner";
-import { useLocation } from "wouter";
-import { Button } from "./ui/Button";
 import { runningOrdersCount, salesToday, usePos } from "./PosContext";
 import { formatIDR } from "../data/menu";
 import { t } from "../locales/en";
 
 export function MetricStrip() {
-  const [, setLocation] = useLocation();
-  const { orders, triggerOpenDrawer } = usePos();
+  const { orders } = usePos();
   const running = runningOrdersCount(orders);
   const paidOrders = orders.filter((o) => o.status === "sudah-dibayar");
   const avgOrder =
     paidOrders.length > 0
       ? Math.round(
-          paidOrders.reduce((sum, o) => sum + o.total, 0) / paidOrders.length,
-        )
+        paidOrders.reduce((sum, o) => sum + o.total, 0) / paidOrders.length,
+      )
       : 185000;
-
-  const handleOpenDrawerClick = () => {
-    triggerOpenDrawer();
-    toast.success("Laci Kas Dibuka (Drawer Kick)", {
-      description: "Sinyal pulsa ESC/POS fisik RJ11 dikirim ke printer kasir.",
-      icon: <Vault size={16} className="text-counterlime-dark" />,
-      action: {
-        label: "Buka Modul Kas",
-        onClick: () => setLocation("/laci-kas"),
-      },
-    });
-  };
 
   return (
     <section
@@ -51,12 +34,6 @@ export function MetricStrip() {
         value={formatIDR(avgOrder)}
         delta={t.metrics.avgWindow}
       />
-      <div className="flex items-center justify-center p-3">
-        <Button variant="outline" size="sm" onClick={handleOpenDrawerClick} className="h-8 text-xs">
-          <Banknote size={15} />
-          {t.metrics.openDrawer}
-        </Button>
-      </div>
     </section>
   );
 }

@@ -2,8 +2,8 @@ import Dexie, { type EntityTable } from "dexie";
 import { MENU_SEED, type MenuItem } from "../data/menu";
 
 export type PayMethod = "kartu-qr" | "tunai" | "qris";
-export type OrderStatus = "disimpan" | "memasak" | "siap" | "sudah-dibayar";
-export type OrderType = "bawa-pulang" | "meja";
+export type OrderStatus = "disimpan" | "sudah-dibayar";
+
 
 export type OrderItemLine = {
   itemId: string;
@@ -24,11 +24,9 @@ export type OrderRow = {
   itemCount: number;
   items?: OrderItemLine[];
   method?: PayMethod;
-  orderType: OrderType;
-  tableNumber?: number;
-  tableName?: string;
-  guests?: number;
   customerName?: string;
+  cashierId?: string;
+  cashierName?: string;
   waiterId?: string;
   waiterName?: string;
   source?: "pos" | "waiter" | "self-order";
@@ -153,22 +151,27 @@ db.version(5).stores({
   categories: "id, name, kind, sortOrder, createdAt",
 });
 
+db.version(6).upgrade(async (tx) => {
+  await tx.table("orders").toCollection().modify((o: Record<string, unknown>) => {
+    delete o.orderType;
+    delete o.tableNumber;
+    delete o.tableName;
+    delete o.guests;
+  });
+});
+
 const SEED_ORDERS: OrderRow[] = [
   {
     no: 1048,
-    status: "memasak",
+    status: "disimpan",
     total: 85000,
     subtotal: 76500,
     tax: 8500,
     discount: 0,
     itemCount: 3,
-    orderType: "meja",
-    tableNumber: 1,
-    tableName: "Meja 01",
     customerName: "Budi Santoso",
     source: "self-order",
     paymentChoice: "pay-later",
-    guests: 2,
     items: [
       { itemId: "kopi-susu", name: "Kopi Susu", qty: 2, price: 25000, note: "Less ice, gula aren terpisah" },
       { itemId: "roti-panggang-isi", name: "Roti Panggang Isi", qty: 1, price: 26500, note: "Ekstra keju" },
@@ -177,19 +180,16 @@ const SEED_ORDERS: OrderRow[] = [
   },
   {
     no: 1047,
-    status: "siap",
+    status: "sudah-dibayar",
     total: 284000,
     subtotal: 255855,
     tax: 28145,
     discount: 0,
     itemCount: 2,
-    orderType: "meja",
-    tableNumber: 4,
-    tableName: "Meja 04",
     customerName: "Rina & Teman",
-    source: "waiter",
-    paymentChoice: "pay-later",
-    guests: 2,
+    source: "pos",
+    paidAt: Date.now() - 3600_000,
+    paymentChoice: "paid-now",
     items: [
       { itemId: "nasi-goreng-spesial", name: "Nasi Goreng Spesial", qty: 2, price: 35000, note: "Pedas sedang" },
     ],
@@ -201,7 +201,6 @@ const SEED_ORDERS: OrderRow[] = [
     total: 198000,
     itemCount: 2,
     method: "kartu-qr",
-    orderType: "bawa-pulang",
     customerName: "Andi",
     source: "pos",
     paidAt: Date.now() - 5400_000,
@@ -212,13 +211,9 @@ const SEED_ORDERS: OrderRow[] = [
     status: "disimpan",
     total: 442000,
     itemCount: 5,
-    orderType: "meja",
-    tableNumber: 2,
-    tableName: "Meja 02",
     customerName: "Pak Wijaya",
     source: "self-order",
     paymentChoice: "pay-later",
-    guests: 4,
     createdAt: Date.now() - 7200_000,
   },
   {
@@ -227,7 +222,6 @@ const SEED_ORDERS: OrderRow[] = [
     total: 118000,
     itemCount: 1,
     method: "tunai",
-    orderType: "bawa-pulang",
     customerName: "Lia",
     source: "pos",
     paidAt: Date.now() - 9000_000,
@@ -246,7 +240,7 @@ const SEED_MOVEMENTS: CashMovementRow[] = [
     category: "modal_awal",
     amount: 200000,
     description: "Modal awal kasir buka shift",
-    cashierName: "Jamie Morgan",
+    cashierName: "Kasir",
     createdAt: Date.now() - 14400_000,
   },
   {
@@ -255,7 +249,7 @@ const SEED_MOVEMENTS: CashMovementRow[] = [
     category: "bahan_baku",
     amount: 25000,
     description: "Beli Es Batu Kristal 2 Pack",
-    cashierName: "Jamie Morgan",
+    cashierName: "Kasir",
     createdAt: Date.now() - 7200_000,
   },
 ];
@@ -270,6 +264,12 @@ db.on("populate", (tx) => {
 
 export async function ensureSeeded(): Promise<void> {
   await db.open();
+  // Sanitize any legacy statuses ('memasak' / 'siap' -> 'disimpan')
+  await db.orders.toCollection().modify((o: Record<string, unknown>) => {
+    if (o.status === "memasak" || o.status === "siap") {
+      o.status = "disimpan";
+    }
+  });
   const productCount = await db.products.count();
   const orderCount = await db.orders.count();
   const tableCount = await tablesTable.count();

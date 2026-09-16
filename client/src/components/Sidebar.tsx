@@ -1,26 +1,23 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  Armchair,
   BarChart3,
-  ChefHat,
   ChevronLeft,
   ChevronRight,
   CirclePlus,
   Package,
   ReceiptText,
   Settings,
-  UtensilsCrossed,
-  Vault,
   KeyRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { KasaMark, StatusDot } from "./KasaLogo";
+import { KasaMark } from "./KasaLogo";
 import { runningOrdersCount, salesToday, usePos } from "./PosContext";
 import { useAuth } from "./AuthContext";
 import { formatIDR } from "../data/menu";
 import { t } from "../locales/en";
 import { cn } from "../lib/cn";
+import { getStoreInfo } from "../lib/storeInfo";
 
 type NavEntry = { href: string; label: string; icon: LucideIcon; badge?: number };
 
@@ -47,8 +44,14 @@ export function Sidebar() {
   const { orders } = usePos();
   const { currentStaff, openSwitchModal } = useAuth();
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [storeInfo, setStoreInfo] = useState(getStoreInfo);
   const running = runningOrdersCount(orders);
-  const kitchenWaiting = orders.filter((o) => o.status === "disimpan" || o.status === "memasak").length;
+
+  useEffect(() => {
+    const handleUpdate = () => setStoreInfo(getStoreInfo());
+    window.addEventListener("kasa_store_info_updated", handleUpdate);
+    return () => window.removeEventListener("kasa_store_info_updated", handleUpdate);
+  }, []);
 
   const toggle = () => {
     setCollapsed((prev) => {
@@ -57,41 +60,17 @@ export function Sidebar() {
     });
   };
 
-  // Dynamic Navigation entries according to active staff role
+  // All Kasir & Admin accounts have complete access to all modules
   const navEntries: NavEntry[] = useMemo(() => {
-    const role = currentStaff.role;
-
-    if (role === "pelayan") {
-      return [{ href: "/pelayan", label: "Pesanan Pelayan", icon: UtensilsCrossed }];
-    }
-
-    if (role === "dapur") {
-      return [{ href: "/dapur", label: "Dapur (KDS)", icon: ChefHat, badge: kitchenWaiting }];
-    }
-
-    if (role === "manajer") {
-      return [
-        { href: "/laporan", label: t.nav.reports, icon: BarChart3 },
-        { href: "/pesanan", label: t.nav.orders, icon: ReceiptText, badge: running },
-        { href: "/laci-kas", label: "Laci Kas", icon: Vault },
-        { href: "/meja", label: t.nav.tables, icon: Armchair },
-      ];
-    }
-
-    // Default for Admin / Kasir: full access
     return [
       { href: "/", label: t.nav.newPos, icon: CirclePlus },
-      { href: "/pelayan", label: "Pelayan", icon: UtensilsCrossed },
-      { href: "/laci-kas", label: "Laci Kas", icon: Vault },
-      { href: "/dapur", label: "Dapur (KDS)", icon: ChefHat, badge: kitchenWaiting },
       { href: "/pesanan", label: t.nav.orders, icon: ReceiptText, badge: running },
-      { href: "/meja", label: t.nav.tables, icon: Armchair },
       { href: "/produk", label: t.nav.products, icon: Package },
       { href: "/laporan", label: t.nav.reports, icon: BarChart3 },
     ];
-  }, [currentStaff.role, kitchenWaiting, running]);
+  }, [running]);
 
-  const showSettings = currentStaff.role === "admin" || currentStaff.role === "kasir" || currentStaff.role === "manajer";
+  const showSettings = true;
 
   return (
     <aside
@@ -105,26 +84,15 @@ export function Sidebar() {
           <KasaMark size={collapsed ? 32 : 38} />
           {!collapsed && (
             <div className="leading-tight">
-              <p className="font-display text-lg font-bold tracking-tight text-white">
-                KASA
+              <p className="font-display text-lg font-bold tracking-tight text-white truncate max-w-[170px]" title={storeInfo.name}>
+                {storeInfo.name}
               </p>
-              <p className="label-caps text-[11px] font-medium text-white/50">
-                {t.appTagline}
+              <p className="label-caps text-[11px] font-medium text-white/50 truncate max-w-[170px]" title={storeInfo.tagline}>
+                {storeInfo.tagline || t.appTagline}
               </p>
             </div>
           )}
         </div>
-        {!collapsed && (
-          <p className="mt-3 flex items-center gap-2 text-xs text-white/55">
-            <StatusDot />
-            {t.station}
-          </p>
-        )}
-        {collapsed && (
-          <p className="mt-3 flex justify-center" title={t.station}>
-            <StatusDot />
-          </p>
-        )}
       </div>
 
       <nav
@@ -165,23 +133,23 @@ export function Sidebar() {
 
       <div className="flex-1" />
 
-      {/* Metrics (Shown for Admin/Kasir/Manager) */}
-      {!collapsed && (currentStaff.role === "kasir" || currentStaff.role === "admin" || currentStaff.role === "manajer") && (
+      {/* Metrics for Cashier */}
+      {!collapsed && (
         <div className="mx-4 mb-4 rounded-xl bg-white/5 p-4 border border-white/5">
           <p className="label-caps text-[11px] font-medium text-white/45">
             {t.metrics.todaySales}
           </p>
-          <p className="mt-1 font-display text-lg font-bold tracking-tight text-counterlime">
+          <p className="mt-1 font-display text-lg font-bold tracking-tight text-primary">
             {formatIDR(salesToday(orders))}
           </p>
         </div>
       )}
 
-      {/* Staff Profile & Quick Switch Trigger */}
+      {/* Cashier Profile & Quick Switch Trigger */}
       <button
         type="button"
         onClick={openSwitchModal}
-        title="Klik untuk ganti peran atau masuk staf lain"
+        title="Klik untuk ganti akun kasir bertugas"
         className={cn(
           "group flex items-center gap-3 border-t border-white/10 text-left transition-colors hover:bg-white/5 w-full",
           collapsed ? "justify-center py-4 px-2" : "px-5 py-4",
@@ -198,8 +166,10 @@ export function Sidebar() {
         {!collapsed && (
           <div className="min-w-0 flex-1 leading-tight">
             <div className="flex items-center justify-between gap-1">
-              <p className="text-sm font-bold text-white truncate">{currentStaff.name}</p>
-              <span className="text-[10px] font-semibold text-counterlime bg-counterlime/15 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
+              <p className="text-sm font-bold text-white truncate">
+                {currentStaff.id === "unassigned" ? "+ Tambah Kasir" : currentStaff.name}
+              </p>
+              <span className="text-[10px] font-semibold text-primary bg-primary/15 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
                 <KeyRound size={10} />
                 PIN
               </span>
@@ -214,7 +184,7 @@ export function Sidebar() {
         onClick={toggle}
         aria-label={collapsed ? t.sidebar.expand : t.sidebar.collapse}
         title={collapsed ? t.sidebar.expand : t.sidebar.collapse}
-        className="pressable mb-4 flex h-10 w-10 items-center justify-center self-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-counterlime"
+        className="pressable mb-4 flex h-10 w-10 items-center justify-center self-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
       </button>
@@ -227,36 +197,14 @@ export function MobileNav() {
   const { currentStaff, openSwitchModal } = useAuth();
 
   const entries: NavEntry[] = useMemo(() => {
-    const role = currentStaff.role;
-
-    if (role === "pelayan") {
-      return [{ href: "/pelayan", label: "Pelayan", icon: UtensilsCrossed }];
-    }
-
-    if (role === "dapur") {
-      return [{ href: "/dapur", label: "Dapur", icon: ChefHat }];
-    }
-
-    if (role === "manajer") {
-      return [
-        { href: "/laporan", label: t.nav.reports, icon: BarChart3 },
-        { href: "/pesanan", label: t.nav.orders, icon: ReceiptText },
-        { href: "/laci-kas", label: "Laci Kas", icon: Vault },
-        { href: "/pengaturan", label: t.nav.settings, icon: Settings },
-      ];
-    }
-
     return [
       { href: "/", label: t.nav.newPos, icon: CirclePlus },
-      { href: "/laci-kas", label: "Laci Kas", icon: Vault },
-      { href: "/dapur", label: "Dapur", icon: ChefHat },
       { href: "/pesanan", label: t.nav.orders, icon: ReceiptText },
-      { href: "/meja", label: t.nav.tables, icon: Armchair },
       { href: "/produk", label: t.nav.products, icon: Package },
       { href: "/laporan", label: t.nav.reports, icon: BarChart3 },
       { href: "/pengaturan", label: t.nav.settings, icon: Settings },
     ];
-  }, [currentStaff.role]);
+  }, []);
 
   return (
     <nav
@@ -287,7 +235,7 @@ export function MobileNav() {
         type="button"
         onClick={openSwitchModal}
         className="pressable flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[11px] text-white/60 hover:text-counterlime px-2"
-        title="Ganti Peran"
+        title="Ganti Kasir"
       >
         <span
           className={cn(

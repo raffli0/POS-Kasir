@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { Sparkles, Trash2, X, Plus, Check, ScanLine } from "lucide-react";
+import { Trash2, X, Plus, Check } from "lucide-react";
 import { toast } from "sonner";
 import type { MenuItem, MenuKind } from "../data/menu";
 import { Button } from "./ui/Button";
 import { usePos } from "./PosContext";
-import { cn } from "../lib/cn";
 import { ProductImagePicker, CULINARY_GALLERY } from "./ProductImagePicker";
-import { BarcodeScanner } from "./BarcodeScanner";
 
 interface ProductModalProps {
   open: boolean;
@@ -28,16 +26,13 @@ export function ProductModal({
   const [category, setCategory] = useState<string>("Makanan");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
-  const [barcode, setBarcode] = useState("");
   const [image, setImage] = useState(CULINARY_GALLERY[0].url);
   const [badge, setBadge] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Inline Quick Add Category
   const [inlineNewCatOpen, setInlineNewCatOpen] = useState(false);
   const [inlineNewCatName, setInlineNewCatName] = useState("");
-  const [inlineNewCatKind, setInlineNewCatKind] = useState<MenuKind>("Makanan");
 
   useEffect(() => {
     if (itemToEdit) {
@@ -45,7 +40,6 @@ export function ProductModal({
       setCategory(itemToEdit.category);
       setPrice(String(itemToEdit.price));
       setDescription(itemToEdit.description);
-      setBarcode(itemToEdit.barcode);
       setImage(itemToEdit.image);
       setBadge(itemToEdit.badge ?? "");
     } else {
@@ -53,7 +47,6 @@ export function ProductModal({
       setCategory(categories[0]?.name || "Makanan");
       setPrice("");
       setDescription("");
-      setBarcode(generateRandomBarcode());
       setImage(CULINARY_GALLERY[0].url);
       setBadge("");
     }
@@ -68,7 +61,7 @@ export function ProductModal({
     }
     const created = await addCategory({
       name: inlineNewCatName.trim(),
-      kind: inlineNewCatKind,
+      kind: "Makanan",
     });
     setCategory(created.name);
     setInlineNewCatName("");
@@ -102,7 +95,6 @@ export function ProductModal({
         prepMinutes: itemToEdit?.prepMinutes ?? 5,
         price: numericPrice,
         description: description.trim() || name.trim(),
-        barcode: barcode.trim() || generateRandomBarcode(),
         image,
         badge: badge.trim() ? badge.trim() : undefined,
       };
@@ -178,7 +170,7 @@ export function ProductModal({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
-                Nama Produk <span className="text-red-500">*</span>
+                Nama Produk <span className="text-coral">*</span>
               </label>
               <input
                 type="text"
@@ -186,19 +178,19 @@ export function ProductModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Contoh: Nasi Goreng Spesial"
-                className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
+                className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-primary/60"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
-                  Kategori <span className="text-red-500">*</span>
+                  Kategori <span className="text-coral">*</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setInlineNewCatOpen(!inlineNewCatOpen)}
-                  className="text-[11px] font-semibold text-counterlime-dark hover:underline flex items-center gap-0.5"
+                  className="text-[11px] font-semibold text-primary-dark hover:underline flex items-center gap-0.5"
                 >
                   <Plus size={12} />
                   {inlineNewCatOpen ? "Tutup" : "+ Kategori Baru"}
@@ -206,7 +198,7 @@ export function ProductModal({
               </div>
 
               {inlineNewCatOpen ? (
-                <div className="mt-1 p-2.5 rounded-lg border border-counterlime/40 bg-counterlime/10 space-y-2">
+                <div className="mt-1 p-2.5 rounded-lg border border-primary/40 bg-primary/10 space-y-2">
                   <div className="flex items-center gap-1.5">
                     <input
                       type="text"
@@ -218,39 +210,22 @@ export function ProductModal({
                     <button
                       type="button"
                       onClick={handleCreateInlineCategory}
-                      className="px-2.5 py-1.5 rounded-md bg-counterlime text-ink text-xs font-bold hover:bg-counterlime-dark flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-md bg-primary text-ink text-xs font-bold hover:bg-primary-dark flex items-center gap-1"
                     >
                       <Check size={13} />
                       Simpan
                     </button>
-                  </div>
-                  <div className="flex gap-1">
-                    {(["Makanan", "Minuman", "Camilan"] as const).map((k) => (
-                      <button
-                        key={k}
-                        type="button"
-                        onClick={() => setInlineNewCatKind(k)}
-                        className={cn(
-                          "px-2 py-0.5 rounded text-[10px] font-semibold border",
-                          inlineNewCatKind === k
-                            ? "bg-ink text-white border-ink"
-                            : "bg-white text-ink/60 border-ink/15"
-                        )}
-                      >
-                        {k}
-                      </button>
-                    ))}
                   </div>
                 </div>
               ) : (
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm text-ink focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
+                  className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm text-ink focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-primary/60"
                 >
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.name}>
-                      {cat.name} ({cat.kind})
+                      {cat.name}
                     </option>
                   ))}
                 </select>
@@ -261,7 +236,7 @@ export function ProductModal({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
-                Harga Jual (Rp) <span className="text-red-500">*</span>
+                Harga Jual (Rp) <span className="text-coral">*</span>
               </label>
               <input
                 type="number"
@@ -271,43 +246,10 @@ export function ProductModal({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="Contoh: 25000"
-                className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
+                className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-primary/60"
               />
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
-                  Barcode (EAN-13 / SKU)
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setScannerOpen(true)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-counterlime/30 hover:bg-counterlime/60 px-2 py-0.5 rounded-md transition-colors"
-                  >
-                    <ScanLine size={12} /> Pindai
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBarcode(generateRandomBarcode())}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink/60 hover:text-ink"
-                  >
-                    <Sparkles size={12} /> Auto
-                  </button>
-                </div>
-              </div>
-              <input
-                type="text"
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                placeholder="899..."
-                className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm font-mono text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
                 Badge / Label Khusus (Opsional)
@@ -320,19 +262,19 @@ export function ProductModal({
                 className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
               />
             </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
-                Deskripsi Singkat Menu
-              </label>
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Deskripsi bahan atau catatan rasa..."
-                className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
+              Deskripsi Singkat Menu (Opsional)
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Deskripsi bahan atau catatan rasa..."
+              className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2 text-sm text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
+            />
           </div>
 
           {/* Image Picker */}
@@ -388,23 +330,6 @@ export function ProductModal({
         </div>
       </div>
 
-      <BarcodeScanner
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        title="Pindai Barcode Fisik Produk"
-        subtitle="Arahkan barcode kemasan produk ke kamera atau ketik/unggah foto"
-        onScanCode={(code) => {
-          setBarcode(code);
-          toast.success(`Barcode Berhasil Diisi: ${code}`);
-          setScannerOpen(false);
-        }}
-      />
     </div>
   );
-}
-
-function generateRandomBarcode(): string {
-  const prefix = "899";
-  const randomPart = Math.floor(1000000000 + Math.random() * 9000000000).toString();
-  return `${prefix}${randomPart}`;
 }

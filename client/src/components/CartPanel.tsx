@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { formatIDR } from "../data/menu";
 import { t } from "../locales/en";
 import { usePos } from "./PosContext";
+import { useAuth } from "./AuthContext";
 import { getPrinterDriver } from "../services/printer";
 import { FoodImage } from "./FoodImage";
 import { Button } from "./ui/Button";
@@ -15,11 +16,9 @@ export function CartPanel({
   onPay: () => void;
 }) {
   const pos = usePos();
+  const { currentStaff } = useAuth();
   const {
     orderNo,
-    orderType,
-    tableNumber,
-    guests,
     lines,
     totals,
     discountType,
@@ -28,15 +27,12 @@ export function CartPanel({
     taxRate,
     serviceChargeEnabled,
     serviceChargeRate,
-    setOrderType,
-    setGuests,
     setDiscount,
     setItemNote,
     increaseLine,
     decreaseLine,
     removeItem,
     clearOrder,
-    saveDraft,
   } = pos;
 
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -51,13 +47,6 @@ export function CartPanel({
     if (lines.length === 0) return;
     clearOrder();
     toast(t.toasts.clearedTitle, { description: t.toasts.clearedBody });
-  };
-
-  const handleSaveToKitchen = () => {
-    const no = saveDraft();
-    toast.success(`Pesanan #${no} dikirim ke Dapur (KDS)!`, {
-      description: "Koki dan barista dapat melihat tiket di halaman /dapur",
-    });
   };
 
   const handleOpenNote = (itemId: string, currentNote?: string) => {
@@ -100,10 +89,7 @@ export function CartPanel({
               </span>
             </div>
             <p className="text-xs font-medium text-ink/50 mt-0.5">
-              {totalItemCount} item dipilih ·{" "}
-              {orderType === "bawa-pulang"
-                ? "Bawa Pulang"
-                : `Makan di Tempat (${String(tableNumber).padStart(2, "0")})`}
+              {totalItemCount} item dipilih
             </p>
           </div>
 
@@ -119,66 +105,6 @@ export function CartPanel({
           )}
         </div>
 
-        {/* Order Type Toggle */}
-        <div className="mt-2.5 grid grid-cols-2 gap-1.5 rounded-xl bg-mineral/70 p-1">
-          <TypeToggle
-            active={orderType === "bawa-pulang"}
-            label={t.cart.takeaway}
-            onClick={() => setOrderType("bawa-pulang")}
-          />
-          <TypeToggle
-            active={orderType === "meja"}
-            label={`Makan di Tempat (${String(tableNumber).padStart(2, "0")})`}
-            onClick={() => setOrderType("meja")}
-          />
-        </div>
-
-        {/* Table & Guest selectors */}
-        <div className="mt-2 flex items-center justify-between gap-2 pt-0.5">
-          {orderType === "meja" ? (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-ink/60">Meja:</span>
-              <select
-                value={tableNumber}
-                onChange={(e) => pos.setTableNumber(Number.parseInt(e.target.value, 10))}
-                className="h-7 rounded-lg border border-ink/15 bg-white px-2 text-xs font-bold text-ink focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
-              >
-                {pos.tables.map((tbl) => {
-                  const numMatch = tbl.name.match(/\d+/);
-                  const num = numMatch ? Number.parseInt(numMatch[0], 10) : 1;
-                  return (
-                    <option key={tbl.id} value={num}>
-                      {tbl.name} ({tbl.area || "Utama"})
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          ) : (
-            <span className="text-xs font-medium text-ink/50">Takeaway (Bawa pulang)</span>
-          )}
-
-          <div className="flex items-center gap-1.5 ml-auto">
-            <span className="text-xs font-bold text-ink/60">Tamu:</span>
-            <div className="flex items-center gap-1 bg-mineral/50 rounded-lg p-0.5 border border-ink/10">
-              <QtyButton
-                label="Kurangi jumlah tamu"
-                onClick={() => setGuests(Math.max(1, guests - 1))}
-              >
-                <Minus size={11} strokeWidth={2.6} />
-              </QtyButton>
-              <span className="min-w-6 text-center font-display text-xs font-bold text-ink">
-                {guests}
-              </span>
-              <QtyButton
-                label="Tambah jumlah tamu"
-                onClick={() => setGuests(guests + 1)}
-              >
-                <Plus size={11} strokeWidth={2.6} />
-              </QtyButton>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Item List (Spacious & Clean Preview) */}
@@ -425,15 +351,7 @@ export function CartPanel({
         </dl>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 pt-0.5">
-          <Button
-            variant="outline"
-            onClick={handleSaveToKitchen}
-            disabled={lines.length === 0}
-            className="font-bold text-xs h-9.5 rounded-xl"
-          >
-            Kirim ke Dapur
-          </Button>
+        <div className="grid grid-cols-1 gap-2 pt-0.5">
           <Button
             variant="primary"
             onClick={onPay}
@@ -452,6 +370,8 @@ export function CartPanel({
             void getPrinterDriver().printReceipt({
               orderNo,
               total: formatIDR(totals.total),
+              cashierName: currentStaff.name,
+              timestamp: Date.now(),
               lines: lines.map((l) => {
                 const prod = pos.products.find((p) => p.id === l.itemId);
                 return {
@@ -547,32 +467,6 @@ export function CartPanel({
         </div>
       )}
     </section>
-  );
-}
-
-function TypeToggle({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "pressable h-8 rounded-lg text-xs font-semibold transition-all",
-        active
-          ? "bg-counterlime text-ink shadow-xs font-bold"
-          : "text-ink/60 hover:text-ink",
-      )}
-    >
-      {label}
-    </button>
   );
 }
 

@@ -19,7 +19,7 @@ async function run() {
 
   // Set active staff to Budi in localStorage
   await page.evaluate(() => {
-    localStorage.setItem("kasa_current_staff_id_v1", "staff-2"); // Budi Santoso (Pelayan)
+    localStorage.setItem("kasa_current_staff_id_v1", "staff-2");
   });
 
   // Navigate to restricted page /laporan

@@ -1,16 +1,19 @@
 import { useLocation } from "wouter";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "../data/menu";
 import { t } from "../locales/en";
 import { Header } from "../components/Header";
 import { usePos, type OrderStatus } from "../components/PosContext";
+import { useAuth } from "../components/AuthContext";
+import { getPrinterDriver } from "../services/printer";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 
 export default function Orders() {
   const [, navigate] = useLocation();
-  const { orders } = usePos();
+  const { orders, setLastReceipt } = usePos();
+  const { currentStaff } = useAuth();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -44,24 +47,37 @@ export default function Orders() {
                     {order.status !== "sudah-dibayar" && (
                       <span
                         aria-hidden="true"
-                        className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-counterlime"
+                        className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-primary"
                       />
                     )}
                     <div className="flex items-center gap-2">
                       <p className="font-display font-bold tracking-tight text-ink">
                         #{order.no}
                       </p>
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-ink/70">
-                        {order.tableName || (order.tableNumber ? `Meja ${order.tableNumber}` : "Bawa Pulang")}
-                      </span>
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink/50">
-                      <span>{t.ordersPage.metaLine(order.itemCount)}</span>
-                      {order.waiterName && (
+                      {(() => {
+                        const orderDate = order.paidAt || order.createdAt;
+                        const timeStr = orderDate
+                          ? new Date(orderDate).toLocaleTimeString("id-ID", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: false,
+                            }).replace(".", ":")
+                          : "";
+                        return (
+                          <span>
+                            {timeStr
+                              ? `Hari ini, ${timeStr} · ${t.ordersPage.itemsUnit(order.itemCount)}`
+                              : t.ordersPage.metaLine(order.itemCount)}
+                          </span>
+                        );
+                      })()}
+                      {order.cashierName && (
                         <>
                           <span>•</span>
-                          <span className="font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                            Pelayan: {order.waiterName}
+                          <span className="font-medium text-ink/85 bg-primary/20 text-[11px] px-1.5 py-0.2 rounded border border-primary/30">
+                            Kasir: {order.cashierName}
                           </span>
                         </>
                       )}
@@ -74,17 +90,41 @@ export default function Orders() {
                     {formatIDR(order.total)}
                   </td>
                   <td className="px-5 py-4 text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        toast(t.toasts.orderOpened(order.no));
-                        navigate("/");
-                      }}
-                    >
-                      {t.ordersPage.open}
-                      <ArrowRight size={14} aria-hidden="true" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Cetak struk pesanan ini"
+                        onClick={() => {
+                          setLastReceipt(order);
+                          void getPrinterDriver().printReceipt({
+                            orderNo: order.no,
+                            total: formatIDR(order.total),
+                            cashierName: order.cashierName || currentStaff.name,
+                            timestamp: order.paidAt || order.createdAt,
+                            lines: (order.items || []).map((it) => ({
+                              qty: it.qty,
+                              name: it.note ? `${it.name} (${it.note})` : it.name,
+                              amount: formatIDR(it.price * it.qty),
+                            })),
+                          });
+                        }}
+                      >
+                        <Printer size={14} aria-hidden="true" />
+                        Cetak
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          toast(t.toasts.orderOpened(order.no));
+                          navigate("/");
+                        }}
+                      >
+                        {t.ordersPage.open}
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -96,13 +136,11 @@ export default function Orders() {
   );
 }
 
-function StatusChip({ status }: { status: OrderStatus }) {
-  const map: Record<OrderStatus, { label: string; tone: "lime" | "neutral" | "dark" }> = {
-    memasak: { label: "Dimasak", tone: "lime" },
-    siap: { label: t.ordersPage.statusSiap, tone: "lime" },
-    "sudah-dibayar": { label: t.ordersPage.statusDibayar, tone: "neutral" },
-    disimpan: { label: t.ordersPage.statusDisimpan, tone: "dark" },
-  };
-  const entry = map[status] || { label: status, tone: "neutral" };
-  return <Badge tone={entry.tone}>{entry.label}</Badge>;
+function StatusChip({ status }: { status: OrderStatus | string }) {
+  const isPaid = status === "sudah-dibayar";
+  return (
+    <Badge tone={isPaid ? "success" : "warning"}>
+      {isPaid ? t.ordersPage.statusDibayar : t.ordersPage.statusDisimpan}
+    </Badge>
+  );
 }

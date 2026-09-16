@@ -12,9 +12,6 @@ import {
   ArrowLeft,
   X,
   Layers,
-  UtensilsCrossed,
-  Coffee,
-  Cookie,
   KeyRound,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,7 +23,7 @@ interface CategoryManagerModalProps {
 }
 
 const CATEGORY_COLORS = [
-  { id: "counterlime", label: "Lime", bg: "bg-counterlime", border: "border-counterlime-dark" },
+  { id: "counterlime", label: "Karamel (Brand)", bg: "bg-counterlime", border: "border-counterlime-dark" },
   { id: "amber", label: "Amber", bg: "bg-amber-400", border: "border-amber-500" },
   { id: "rose", label: "Rose", bg: "bg-rose-400", border: "border-rose-500" },
   { id: "blue", label: "Blue", bg: "bg-blue-400", border: "border-blue-500" },
@@ -41,7 +38,6 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
   // Form State for Add / Direct Edit
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [catName, setCatName] = useState("");
-  const [catKind, setCatKind] = useState<"Makanan" | "Minuman" | "Camilan">("Makanan");
   const [catColor, setCatColor] = useState("counterlime");
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -56,7 +52,6 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
   const resetForm = () => {
     setEditingCatId(null);
     setCatName("");
-    setCatKind("Makanan");
     setCatColor("counterlime");
     setShowAddForm(false);
   };
@@ -64,7 +59,6 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
   const startEdit = (cat: CategoryRow) => {
     setEditingCatId(cat.id);
     setCatName(cat.name);
-    setCatKind(cat.kind);
     setCatColor(cat.color || "counterlime");
     setShowAddForm(true);
   };
@@ -83,7 +77,7 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
           editingCatId,
           {
             name: catName.trim(),
-            kind: catKind,
+            kind: oldCat?.kind || "Makanan",
             color: catColor,
           },
           oldCat?.name
@@ -92,7 +86,7 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
       } else {
         await addCategory({
           name: catName.trim(),
-          kind: catKind,
+          kind: "Makanan",
           color: catColor,
         });
         toast.success(`Kategori baru "${catName}" berhasil ditambahkan!`);
@@ -132,10 +126,9 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
       setVerificationModalOpen(false);
       setTargetCategory(null);
       toast.success(
-        `Kategori "${targetCategory.name}" berhasil dihapus${
-          affectedProducts.length > 0 && reassignTargetCategory
-            ? ` (${affectedProducts.length} produk dialihkan ke "${reassignTargetCategory}")`
-            : ""
+        `Kategori "${targetCategory.name}" berhasil dihapus${affectedProducts.length > 0 && reassignTargetCategory
+          ? ` (${affectedProducts.length} produk dialihkan ke "${reassignTargetCategory}")`
+          : ""
         }`
       );
     } catch {
@@ -167,7 +160,7 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
                 Kelola Kategori Produk
               </h3>
               <p className="text-xs text-ink/55">
-                Tambah, atur jenis dapur, atau hapus kategori dengan verifikasi keamanan dua langkah.
+                Tambah, ubah nama, atau hapus kategori dengan verifikasi keamanan dua langkah.
               </p>
             </div>
           </div>
@@ -199,50 +192,18 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-ink/70 mb-1">
-                  Nama Kategori
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
-                  placeholder="Contoh: Paket Combo / Dessert"
-                  className="w-full px-3 py-2 rounded-xl border border-ink/15 bg-white text-sm font-semibold text-ink focus:ring-2 focus:ring-counterlime focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink/70 mb-1">
-                  Jenis Menu (Rute Dapur)
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(["Makanan", "Minuman", "Camilan"] as const).map((kind) => (
-                    <button
-                      key={kind}
-                      type="button"
-                      onClick={() => setCatKind(kind)}
-                      className={cn(
-                        "py-2 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1 transition-all",
-                        catKind === kind
-                          ? "bg-ink text-white border-ink shadow-sm"
-                          : "bg-white text-ink/60 border-ink/15 hover:text-ink"
-                      )}
-                    >
-                      {kind === "Makanan" ? (
-                        <UtensilsCrossed size={12} />
-                      ) : kind === "Minuman" ? (
-                        <Coffee size={12} />
-                      ) : (
-                        <Cookie size={12} />
-                      )}
-                      {kind}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink/70 mb-1">
+                Nama Kategori
+              </label>
+              <input
+                type="text"
+                required
+                value={catName}
+                onChange={(e) => setCatName(e.target.value)}
+                placeholder="Contoh: Aneka Nasi, Minuman Segar, Camilan"
+                className="w-full px-3 py-2 rounded-xl border border-ink/15 bg-white text-sm font-semibold text-ink focus:ring-2 focus:ring-counterlime focus:outline-none"
+              />
             </div>
 
             {/* Color Swatches */}
@@ -303,9 +264,6 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
                 <th className="label-caps px-4 py-3 text-[11px] font-semibold text-ink/50">
                   Kategori
                 </th>
-                <th className="label-caps px-4 py-3 text-[11px] font-semibold text-ink/50">
-                  Jenis Dapur
-                </th>
                 <th className="label-caps px-4 py-3 text-center text-[11px] font-semibold text-ink/50">
                   Jumlah Produk
                 </th>
@@ -327,16 +285,16 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
                             cat.color === "amber"
                               ? "bg-amber-400"
                               : cat.color === "rose"
-                              ? "bg-rose-400"
-                              : cat.color === "blue"
-                              ? "bg-blue-400"
-                              : cat.color === "emerald"
-                              ? "bg-emerald-400"
-                              : cat.color === "purple"
-                              ? "bg-purple-400"
-                              : cat.color === "teal"
-                              ? "bg-teal-400"
-                              : "bg-counterlime"
+                                ? "bg-rose-400"
+                                : cat.color === "blue"
+                                  ? "bg-blue-400"
+                                  : cat.color === "emerald"
+                                    ? "bg-emerald-400"
+                                    : cat.color === "purple"
+                                      ? "bg-purple-400"
+                                      : cat.color === "teal"
+                                        ? "bg-teal-400"
+                                        : "bg-counterlime"
                           )}
                         />
                         <span>{cat.name}</span>
@@ -346,18 +304,6 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
                           </span>
                         )}
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-mineral/70 text-ink/70 border border-ink/10">
-                        {cat.kind === "Makanan" ? (
-                          <UtensilsCrossed size={11} />
-                        ) : cat.kind === "Minuman" ? (
-                          <Coffee size={11} />
-                        ) : (
-                          <Cookie size={11} />
-                        )}
-                        {cat.kind}
-                      </span>
                     </td>
                     <td className="px-4 py-3 text-center font-bold text-xs">
                       <span
@@ -415,18 +361,18 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
             role="dialog"
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl border border-rose-200 bg-white p-6 shadow-2xl relative"
+            className="w-full max-w-lg rounded-2xl border border-coral/30 bg-white p-6 shadow-2xl relative"
           >
             {/* Header with Step Indicator */}
             <div className="flex items-start justify-between border-b border-ink/10 pb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center border border-rose-200">
+                <div className="w-10 h-10 rounded-xl bg-coral/10 text-coral flex items-center justify-center border border-coral/20">
                   <ShieldAlert className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-display text-base font-bold text-ink flex items-center gap-2">
                     Verifikasi Dua Langkah
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-coral/10 text-coral font-bold">
                       Langkah {verificationStep} dari 2
                     </span>
                   </h3>
@@ -447,8 +393,8 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
             {/* STEP 1: Impact Review & Product Reassignment */}
             {verificationStep === 1 ? (
               <div className="mt-4 space-y-4">
-                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="p-3.5 rounded-xl bg-coral/5 border border-coral/20 text-xs text-coral flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-coral shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold">Konfirmasi Hapus Kategori: </span>
                     Anda akan menghapus kategori <strong>"{targetCategory.name}"</strong>.
@@ -462,7 +408,7 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
                   <div className="p-3 rounded-xl border border-ink/10 bg-mineral/30 text-xs text-ink/80 space-y-1.5">
                     <div className="flex justify-between font-semibold">
                       <span>Jumlah Produk Terdaftar:</span>
-                      <span className="text-rose-600 font-bold">{affectedProducts.length} Produk</span>
+                      <span className="text-coral font-bold">{affectedProducts.length} Produk</span>
                     </div>
                     {affectedProducts.length > 0 && (
                       <div className="text-[11px] text-ink/55 line-clamp-2">
@@ -487,7 +433,7 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
                         .filter((c) => c.id !== targetCategory.id)
                         .map((c) => (
                           <option key={c.id} value={c.name}>
-                            Pindahkan ke: {c.name} ({c.kind})
+                            Pindahkan ke: {c.name}
                           </option>
                         ))}
                     </select>
@@ -536,7 +482,7 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
                     value={pinInput}
                     onChange={(e) => setPinInput(e.target.value)}
                     placeholder="••••"
-                    className="w-full text-center tracking-widest px-3.5 py-2.5 rounded-xl border border-ink/15 bg-white text-lg font-bold text-ink focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                    className="w-full text-center tracking-widest px-3.5 py-2.5 rounded-xl border border-ink/15 bg-white text-lg font-bold text-ink focus:ring-2 focus:ring-coral/40 focus:outline-none"
                   />
                 </div>
 
@@ -546,14 +492,14 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
 
                 <div>
                   <label className="block text-xs font-semibold text-ink/70 mb-1.5">
-                    Ketik teks: <strong className="text-rose-600 font-mono">{targetCategory.name}</strong>
+                    Ketik teks: <strong className="text-coral font-mono">{targetCategory.name}</strong>
                   </label>
                   <input
                     type="text"
                     value={typeConfirmInput}
                     onChange={(e) => setTypeConfirmInput(e.target.value)}
                     placeholder={targetCategory.name}
-                    className="w-full px-3.5 py-2 rounded-xl border border-ink/15 bg-white text-sm font-semibold text-ink focus:ring-2 focus:ring-rose-400 focus:outline-none"
+                    className="w-full px-3.5 py-2 rounded-xl border border-ink/15 bg-white text-sm font-semibold text-ink focus:ring-2 focus:ring-coral/40 focus:outline-none"
                   />
                 </div>
 
@@ -581,7 +527,7 @@ export function CategoryManagerModal({ open, onClose }: CategoryManagerModalProp
                       "gap-2 font-bold transition-all",
                       pinInput.trim() === "1234" ||
                         typeConfirmInput.trim().toLowerCase() === targetCategory.name.trim().toLowerCase()
-                        ? "bg-rose-600 hover:bg-rose-700 text-white shadow-md cursor-pointer"
+                        ? "bg-coral hover:bg-coral-dark text-white shadow-md cursor-pointer"
                         : "bg-ink/10 text-ink/40 border-0 cursor-not-allowed"
                     )}
                   >

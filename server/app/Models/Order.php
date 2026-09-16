@@ -11,9 +11,6 @@ class Order extends Model
     protected $fillable = [
         'no',
         'status',
-        'order_type',
-        'table_number',
-        'guests',
         'item_count',
         'subtotal',
         'tax',
@@ -24,8 +21,6 @@ class Order extends Model
 
     protected $casts = [
         'no' => 'integer',
-        'table_number' => 'integer',
-        'guests' => 'integer',
         'item_count' => 'integer',
         'subtotal' => 'integer',
         'tax' => 'integer',

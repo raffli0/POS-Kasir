@@ -1,6 +1,8 @@
 export type ReceiptPayload = {
   orderNo: number;
   total: string;
+  cashierName?: string;
+  timestamp?: number;
   lines: Array<{ qty: number; name: string; amount: string }>;
 };
 

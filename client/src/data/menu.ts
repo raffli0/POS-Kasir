@@ -4,7 +4,7 @@ export type MenuKind = "Minuman" | "Makanan" | "Camilan";
 
 export type MenuItem = {
   id: string;
-  barcode: string;
+  barcode?: string;
   name: string;
   description: string;
   price: number; // Rupiah utuh, misalnya 25000
@@ -29,7 +29,6 @@ export const MENU_CATEGORIES: MenuCategory[] = [
 export const MENU_SEED: MenuItem[] = [
   {
     id: "kopi-susu",
-    barcode: "8991002100015",
     name: "Kopi Susu",
     description: "Espresso, susu segar, dan gula aren yang lembut.",
     price: 25000,
@@ -41,7 +40,6 @@ export const MENU_SEED: MenuItem[] = [
   },
   {
     id: "roti-panggang-isi",
-    barcode: "8991002100022",
     name: "Roti Panggang Isi",
     description: "Roti sourdough panggang dengan isian keju dan telur.",
     price: 42000,
@@ -52,7 +50,6 @@ export const MENU_SEED: MenuItem[] = [
   },
   {
     id: "kue-lemon",
-    barcode: "8991002100039",
     name: "Kue Lemon",
     description: "Kue lemon lembut dengan taburan gula halus.",
     price: 28000,
@@ -63,7 +60,6 @@ export const MENU_SEED: MenuItem[] = [
   },
   {
     id: "kopi-hitam",
-    barcode: "8991002100046",
     name: "Kopi Hitam",
     description: "Seduhan biji arabika pekat tanpa gula.",
     price: 18000,
@@ -74,7 +70,6 @@ export const MENU_SEED: MenuItem[] = [
   },
   {
     id: "roti-pagi",
-    barcode: "8991002100053",
     name: "Roti Pagi",
     description: "Roti bakar mentega hangat untuk pembuka hari.",
     price: 32000,
@@ -85,7 +80,6 @@ export const MENU_SEED: MenuItem[] = [
   },
   {
     id: "nasi-sayur-panggang",
-    barcode: "8991002100060",
     name: "Nasi Sayur Panggang",
     description: "Nasi hangat dengan sayuran panggang dan sambal rumahan.",
     price: 48000,
@@ -97,7 +91,6 @@ export const MENU_SEED: MenuItem[] = [
   },
   {
     id: "kopi-jeruk-dingin",
-    barcode: "8991002100077",
     name: "Kopi Jeruk Dingin",
     description: "Kopi dingin dengan perasan jeruk yang menyegarkan.",
     price: 30000,
@@ -108,7 +101,6 @@ export const MENU_SEED: MenuItem[] = [
   },
   {
     id: "potongan-kue-beri",
-    barcode: "8991002100084",
     name: "Potongan Kue Beri",
     description: "Potongan kue lembut dengan isian buah beri.",
     price: 27000,

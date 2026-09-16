@@ -54,7 +54,14 @@ export async function deleteTable(id: string): Promise<void> {
 
 export async function loadOrders(): Promise<OrderRow[]> {
   const rows = await db.orders.toArray();
-  return rows.sort((a, b) => b.no - a.no);
+  return rows
+    .map((r) => {
+      if ((r.status as string) === "memasak" || (r.status as string) === "siap") {
+        return { ...r, status: "disimpan" as OrderStatus };
+      }
+      return r;
+    })
+    .sort((a, b) => b.no - a.no);
 }
 
 export async function nextOrderNo(): Promise<number> {
@@ -138,12 +145,6 @@ export async function deleteCategory(
   }
 }
 
-export async function findProductByBarcode(
-  code: string,
-): Promise<MenuItem | undefined> {
-  return db.products.where("barcode").equals(code).first();
-}
-
 export async function upsertProducts(items: MenuItem[]): Promise<number> {
   await db.products.bulkPut(items);
   return items.length;
@@ -159,10 +160,6 @@ export function toOrderRow(input: {
   serviceCharge?: number;
   itemCount: number;
   method?: PayMethod;
-  orderType: OrderRow["orderType"];
-  tableNumber?: number;
-  tableName?: string;
-  guests?: number;
   paidAt?: number;
 }): OrderRow {
   return { ...input, createdAt: Date.now() };

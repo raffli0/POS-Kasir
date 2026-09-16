@@ -14,10 +14,10 @@ class OrderSeeder extends Seeder
         $byBarcode = Product::query()->get()->keyBy('barcode');
 
         $orders = [
-            ['no' => 1044, 'status' => 'sudah-dibayar', 'order_type' => 'bawa-pulang', 'method' => 'tunai', 'items' => [['barcode' => '8991002100046', 'qty' => 1]]],
-            ['no' => 1045, 'status' => 'disimpan', 'order_type' => 'meja', 'table_number' => 2, 'guests' => 4, 'method' => null, 'items' => [['barcode' => '8991002100015', 'qty' => 2], ['barcode' => '8991002100022', 'qty' => 1], ['barcode' => '8991002100060', 'qty' => 1], ['barcode' => '8991002100039', 'qty' => 1]]],
-            ['no' => 1046, 'status' => 'sudah-dibayar', 'order_type' => 'bawa-pulang', 'method' => 'kartu-qr', 'items' => [['barcode' => '8991002100015', 'qty' => 1], ['barcode' => '8991002100084', 'qty' => 1]]],
-            ['no' => 1047, 'status' => 'siap', 'order_type' => 'meja', 'table_number' => 4, 'guests' => 2, 'method' => null, 'items' => [['barcode' => '8991002100060', 'qty' => 1], ['barcode' => '8991002100053', 'qty' => 1]]],
+            ['no' => 1044, 'status' => 'sudah-dibayar', 'method' => 'tunai', 'items' => [['barcode' => '8991002100046', 'qty' => 1]]],
+            ['no' => 1045, 'status' => 'disimpan', 'method' => null, 'items' => [['barcode' => '8991002100015', 'qty' => 2], ['barcode' => '8991002100022', 'qty' => 1], ['barcode' => '8991002100060', 'qty' => 1], ['barcode' => '8991002100039', 'qty' => 1]]],
+            ['no' => 1046, 'status' => 'sudah-dibayar', 'method' => 'kartu-qr', 'items' => [['barcode' => '8991002100015', 'qty' => 1], ['barcode' => '8991002100084', 'qty' => 1]]],
+            ['no' => 1047, 'status' => 'siap', 'method' => null, 'items' => [['barcode' => '8991002100060', 'qty' => 1], ['barcode' => '8991002100053', 'qty' => 1]]],
         ];
 
         foreach ($orders as $entry) {
@@ -41,9 +41,6 @@ class OrderSeeder extends Seeder
                 ['no' => $entry['no']],
                 [
                     'status' => $entry['status'],
-                    'order_type' => $entry['order_type'],
-                    'table_number' => $entry['table_number'] ?? null,
-                    'guests' => $entry['guests'] ?? null,
                     'item_count' => $itemCount,
                     'subtotal' => $subtotal,
                     'tax' => $tax,

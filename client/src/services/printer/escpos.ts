@@ -1,4 +1,5 @@
 import type { ReceiptPayload } from "./types";
+import { getStoreInfo } from "../../lib/storeInfo";
 
 /**
  * Standard ESC/POS Command Byte Sequences
@@ -48,13 +49,15 @@ export function generateEscPosReceipt(payload: ReceiptPayload, paperWidth: 58 | 
   append(ESC_POS_COMMANDS.INIT);
 
   // 2. Header (Store Title)
+  const storeInfo = getStoreInfo();
   append(ESC_POS_COMMANDS.ALIGN_CENTER);
   append(ESC_POS_COMMANDS.BOLD_ON);
   append(ESC_POS_COMMANDS.DOUBLE_SIZE);
-  appendText("KASA KASIR\n");
+  appendText(`${storeInfo.name.toUpperCase()}\n`);
   append(ESC_POS_COMMANDS.NORMAL_SIZE);
-  appendText("Sistem Kasir Kuliner\n");
-  appendText(`${new Date().toLocaleDateString("id-ID")} ${new Date().toLocaleTimeString("id-ID")}\n`);
+  if (storeInfo.tagline) appendText(`${storeInfo.tagline}\n`);
+  if (storeInfo.address) appendText(`${storeInfo.address}\n`);
+  if (storeInfo.phone) appendText(`Telp: ${storeInfo.phone}\n`);
   append(ESC_POS_COMMANDS.BOLD_OFF);
 
   // 3. Divider
@@ -62,11 +65,23 @@ export function generateEscPosReceipt(payload: ReceiptPayload, paperWidth: 58 | 
 
   // 4. Order Info
   append(ESC_POS_COMMANDS.ALIGN_LEFT);
-  if (payload.orderNo > 0) {
-    appendText(`No. Pesanan: #${payload.orderNo}\n`);
-  } else {
-    appendText("UJI COBA CETAK STRUK\n");
-  }
+  const receiptTimestamp = payload.timestamp || Date.now();
+  const dateObj = new Date(receiptTimestamp);
+  const hours = String(dateObj.getHours()).padStart(2, "0");
+  const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+  const timeFormatted = `${hours}:${minutes}`;
+  const dateFormatted = dateObj.toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const orderTitle = payload.orderNo > 0 ? `Pesanan #${payload.orderNo}` : "Pesanan #0";
+  appendText(formatTwoColumns(orderTitle, timeFormatted, maxChars));
+  appendText(`${dateFormatted}\n`);
+  const cashier = payload.cashierName || "Kasir";
+  appendText(`Kasir: ${cashier}\n`);
   appendText("-".repeat(maxChars) + "\n");
 
   // 5. Item Lines
@@ -89,8 +104,8 @@ export function generateEscPosReceipt(payload: ReceiptPayload, paperWidth: 58 | 
 
   // 7. Footer
   append(ESC_POS_COMMANDS.ALIGN_CENTER);
-  appendText("\nTerima Kasih Atas Kunjungan Anda!\n");
-  appendText("Simpan struk sebagai bukti pembayaran\n");
+  appendText("\nTerima kasih telah berbelanja\n");
+  appendText("Barang yang sudah dibeli\ntidak dapat ditukar\n");
 
   // 8. Feed & Cut
   append(ESC_POS_COMMANDS.FEED_LINES(4));

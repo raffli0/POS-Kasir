@@ -10,6 +10,7 @@ import {
 import { MENU_SEED, type MenuItem } from "../data/menu";
 import { resetToDemoSeed } from "../lib/exporters";
 import { broadcastSync, subscribeSync } from "../lib/syncBus";
+import { useAuth } from "./AuthContext";
 import {
   db,
   ensureSeeded,
@@ -18,7 +19,6 @@ import {
   type OrderItemLine,
   type OrderRow,
   type OrderStatus,
-  type OrderType,
   type PayMethod,
   type ShiftRecord,
   type TableRow,
@@ -50,7 +50,6 @@ import {
 } from "../lib/repo";
 
 export type {
-  OrderType,
   PayMethod,
   OrderStatus,
   TableRow,
@@ -73,7 +72,12 @@ export type OrderTotals = {
   count: number;
 };
 
-type PayResult = { orderNo: number; total: number; change: number | null };
+type PayResult = {
+  orderNo: number;
+  total: number;
+  change: number | null;
+  order: OrderRow;
+};
 
 type PosContextValue = {
   ready: boolean;
@@ -81,12 +85,11 @@ type PosContextValue = {
   categories: CategoryRow[];
   tables: TableRow[];
   orderNo: number;
-  orderType: OrderType;
-  tableNumber: number;
-  guests: number;
   lines: CartLine[];
   totals: OrderTotals;
   orders: OrderRow[];
+  lastReceipt: OrderRow | null;
+  setLastReceipt: (order: OrderRow | null) => void;
   cashMovements: CashMovementRow[];
   discountType: "percent" | "fixed";
   discountValue: number;
@@ -95,9 +98,6 @@ type PosContextValue = {
   taxEnabled: boolean;
   serviceChargeEnabled: boolean;
   activeShift: ShiftRecord | null;
-  setOrderType: (t: OrderType) => void;
-  setTableNumber: (n: number) => void;
-  setGuests: (n: number) => void;
   setDiscount: (type: "percent" | "fixed", value: number) => void;
   setTaxConfig: (enabled: boolean, rate: number) => void;
   setServiceChargeConfig: (enabled: boolean, rate: number) => void;
@@ -110,25 +110,18 @@ type PosContextValue = {
   saveDraft: () => number;
   payOrder: (method: PayMethod, cashReceived?: number) => PayResult;
   createSelfOrder: (input: {
-    tableId?: string;
-    tableName?: string;
-    tableNumber?: number;
     customerName: string;
     lines: CartLine[];
     paymentChoice: "paid-now" | "pay-later";
     method?: PayMethod;
   }) => Promise<OrderRow>;
   createWaiterOrder: (input: {
-    tableId?: string;
-    tableName?: string;
-    tableNumber?: number;
     customerName?: string;
     waiterId?: string;
     waiterName?: string;
     lines: CartLine[];
     status?: OrderStatus;
     method?: PayMethod;
-    guests?: number;
   }) => Promise<OrderRow>;
   addCashMovement: (input: {
     type: CashMovementType;
@@ -139,7 +132,6 @@ type PosContextValue = {
   }) => Promise<CashMovementRow>;
   deleteCashMovement: (id: string) => Promise<void>;
   reloadCashMovements: () => Promise<void>;
-  triggerOpenDrawer: () => void;
   reloadProducts: () => Promise<void>;
   reloadTables: () => Promise<void>;
   reloadOrders: () => Promise<void>;
@@ -153,7 +145,6 @@ type PosContextValue = {
   addTable: (table: TableRow) => Promise<void>;
   updateTable: (table: TableRow) => Promise<void>;
   deleteTable: (id: string) => Promise<void>;
-  selectTable: (table: TableRow) => void;
   updateOrderStatus: (no: number, status: OrderStatus) => Promise<void>;
   openShift: (cashierName: string, startingCash: number) => Promise<void>;
   closeShift: (
@@ -213,6 +204,7 @@ function isToday(ts?: number): boolean {
 }
 
 export function PosProvider({ children }: { children: ReactNode }) {
+  const { currentStaff } = useAuth();
   const [ready, setReady] = useState(false);
   const [products, setProducts] = useState<MenuItem[]>(MENU_SEED);
   const [categories, setCategories] = useState<CategoryRow[]>(DEFAULT_CATEGORIES);
@@ -221,13 +213,11 @@ export function PosProvider({ children }: { children: ReactNode }) {
   const [activeShift, setActiveShift] = useState<ShiftRecord | null>(null);
 
   const [orderNo, setOrderNo] = useState(1049);
-  const [orderType, setOrderType] = useState<OrderType>("bawa-pulang");
-  const [tableNumber, setTableNumber] = useState(1);
-  const [guests, setGuests] = useState(2);
+  const [lastReceipt, setLastReceipt] = useState<OrderRow | null>(null);
 
-  // Multi-tab carts per table
+  // Cart lines
   const [tableDrafts, setTableDrafts] = useState<Record<string, CartLine[]>>({
-    takeaway: [
+    default: [
       { itemId: "kopi-susu", qty: 1, note: "Gula aren sedikit" },
       { itemId: "roti-panggang-isi", qty: 1 },
     ],
@@ -270,7 +260,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
 
   const [cashMovements, setCashMovements] = useState<CashMovementRow[]>([]);
 
-  const activeCartKey = orderType === "bawa-pulang" ? "takeaway" : `table-${tableNumber}`;
+  const activeCartKey = "default";
   const lines = tableDrafts[activeCartKey] || [];
 
   const setLinesForActiveCart = useCallback(
@@ -283,7 +273,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
         };
       });
     },
-    [activeCartKey],
+    [],
   );
 
   useEffect(() => {
@@ -467,14 +457,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      const tableName =
-        orderType === "meja"
-          ? tables.find((t) => {
-              const m = t.name.match(/\d+/);
-              return m && Number.parseInt(m[0], 10) === tableNumber;
-            })?.name || `Meja ${String(tableNumber).padStart(2, "0")}`
-          : undefined;
-
       const row: OrderRow = {
         no: orderNo,
         status,
@@ -486,30 +468,32 @@ export function PosProvider({ children }: { children: ReactNode }) {
         itemCount: recordedTotals.count,
         items: orderItems,
         method,
-        orderType,
-        tableNumber: orderType === "meja" ? tableNumber : undefined,
-        tableName,
-        guests: orderType === "meja" ? guests : undefined,
         source: "pos",
+        cashierId: currentStaff?.id,
+        cashierName: currentStaff?.name,
         paymentChoice: status === "sudah-dibayar" ? "paid-now" : "pay-later",
         paidAt: status === "sudah-dibayar" ? Date.now() : undefined,
         createdAt: Date.now(),
       };
 
       setOrders((prev) => [row, ...prev]);
+      if (status === "sudah-dibayar") {
+        setLastReceipt(row);
+      }
       setLinesForActiveCart(() => []);
       setDiscountValue(0);
       setOrderNo((n) => n + 1);
       void saveOrder(row).then(() => {
         broadcastSync("ORDER_CREATED", { order: row });
       });
+      return row;
     },
-    [guests, lines, orderNo, orderType, products, setLinesForActiveCart, tableNumber, tables],
+    [currentStaff, lines, orderNo, products, setLinesForActiveCart],
   );
 
   const saveDraft = useCallback(() => {
     const no = orderNo;
-    recordOrder("memasak", totals);
+    recordOrder("disimpan", totals);
     return no;
   }, [orderNo, recordOrder, totals]);
 
@@ -521,17 +505,14 @@ export function PosProvider({ children }: { children: ReactNode }) {
         method === "tunai" && cashReceived !== undefined
           ? Math.max(0, cashReceived - paidTotal)
           : null;
-      recordOrder("sudah-dibayar", totals, method);
-      return { orderNo: no, total: paidTotal, change };
+      const row = recordOrder("sudah-dibayar", totals, method);
+      return { orderNo: no, total: paidTotal, change, order: row };
     },
     [orderNo, recordOrder, totals],
   );
 
   const createSelfOrder = useCallback(
     async (input: {
-      tableId?: string;
-      tableName?: string;
-      tableNumber?: number;
       customerName: string;
       lines: CartLine[];
       paymentChoice: "paid-now" | "pay-later";
@@ -560,7 +541,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
         serviceChargeRate,
       );
 
-      const status: OrderStatus = input.paymentChoice === "paid-now" ? "sudah-dibayar" : "memasak";
+      const status: OrderStatus = input.paymentChoice === "paid-now" ? "sudah-dibayar" : "disimpan";
 
       const row: OrderRow = {
         no: orderNumber,
@@ -573,10 +554,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
         itemCount: selfTotals.count,
         items: orderItems,
         method: input.method || (input.paymentChoice === "paid-now" ? "qris" : undefined),
-        orderType: "meja",
-        tableNumber: input.tableNumber,
-        tableName: input.tableName || (input.tableNumber ? `Meja ${String(input.tableNumber).padStart(2, "0")}` : undefined),
-        customerName: input.customerName.trim() || "Pelanggan Meja",
+        customerName: input.customerName.trim() || "Pelanggan",
         source: "self-order",
         paymentChoice: input.paymentChoice,
         paidAt: status === "sudah-dibayar" ? Date.now() : undefined,
@@ -594,16 +572,12 @@ export function PosProvider({ children }: { children: ReactNode }) {
 
   const createWaiterOrder = useCallback(
     async (input: {
-      tableId?: string;
-      tableName?: string;
-      tableNumber?: number;
       customerName?: string;
       waiterId?: string;
       waiterName?: string;
       lines: CartLine[];
       status?: OrderStatus;
       method?: PayMethod;
-      guests?: number;
     }): Promise<OrderRow> => {
       const orderNumber = await nextOrderNo();
       const orderItems: OrderItemLine[] = input.lines.map((l) => {
@@ -628,7 +602,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
         serviceChargeRate,
       );
 
-      const status: OrderStatus = input.status || (input.method ? "sudah-dibayar" : "memasak");
+      const status: OrderStatus = input.status || (input.method ? "sudah-dibayar" : "disimpan");
 
       const row: OrderRow = {
         no: orderNumber,
@@ -641,11 +615,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
         itemCount: waiterTotals.count,
         items: orderItems,
         method: input.method,
-        orderType: "meja",
-        tableNumber: input.tableNumber,
-        tableName: input.tableName || (input.tableNumber ? `Meja ${String(input.tableNumber).padStart(2, "0")}` : undefined),
-        guests: input.guests || 2,
-        customerName: input.customerName?.trim() || "Tamu Meja",
+        customerName: input.customerName?.trim() || "Pelanggan",
         waiterId: input.waiterId,
         waiterName: input.waiterName,
         source: "waiter",
@@ -776,27 +746,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
     broadcastSync("CASH_MOVEMENT_CREATED");
   }, []);
 
-  const triggerOpenDrawer = useCallback(() => {
-    try {
-      if (typeof window !== "undefined") {
-        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        if (AudioCtx) {
-          const ctx = new AudioCtx();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "triangle";
-          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
-          gain.gain.setValueAtTime(0.25, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.25);
-        }
-      }
-    } catch {}
-  }, []);
 
   const reloadProducts = useCallback(async () => {
     const p = await loadProducts();
@@ -896,14 +845,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
     broadcastSync("TABLE_UPDATED");
   }, []);
 
-  const selectTable = useCallback((table: TableRow) => {
-    const numMatch = table.name.match(/\d+/);
-    const num = numMatch ? Number.parseInt(numMatch[0], 10) : 1;
-    setOrderType("meja");
-    setTableNumber(num);
-    setGuests(table.seats);
-  }, []);
-
   const resetSeed = useCallback(async () => {
     await resetToDemoSeed();
     const [prods, tbls, movs, cats] = await Promise.all([
@@ -928,12 +869,11 @@ export function PosProvider({ children }: { children: ReactNode }) {
       categories,
       tables,
       orderNo,
-      orderType,
-      tableNumber,
-      guests,
       lines,
       totals,
       orders,
+      lastReceipt,
+      setLastReceipt,
       cashMovements,
       discountType,
       discountValue,
@@ -942,9 +882,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       taxEnabled,
       serviceChargeEnabled,
       activeShift,
-      setOrderType,
-      setTableNumber,
-      setGuests,
       setDiscount,
       setTaxConfig,
       setServiceChargeConfig,
@@ -961,7 +898,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       addCashMovement,
       deleteCashMovement,
       reloadCashMovements,
-      triggerOpenDrawer,
       reloadProducts,
       reloadTables,
       reloadOrders,
@@ -975,7 +911,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       addTable,
       updateTable,
       deleteTable,
-      selectTable,
       updateOrderStatus,
       openShift,
       closeShift,
@@ -987,12 +922,11 @@ export function PosProvider({ children }: { children: ReactNode }) {
       categories,
       tables,
       orderNo,
-      orderType,
-      tableNumber,
-      guests,
       lines,
       totals,
       orders,
+      lastReceipt,
+      setLastReceipt,
       cashMovements,
       discountType,
       discountValue,
@@ -1001,9 +935,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       taxEnabled,
       serviceChargeEnabled,
       activeShift,
-      setOrderType,
-      setTableNumber,
-      setGuests,
       setDiscount,
       setTaxConfig,
       setServiceChargeConfig,
@@ -1020,7 +951,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       addCashMovement,
       deleteCashMovement,
       reloadCashMovements,
-      triggerOpenDrawer,
       reloadProducts,
       reloadTables,
       reloadOrders,
@@ -1034,7 +964,6 @@ export function PosProvider({ children }: { children: ReactNode }) {
       addTable,
       updateTable,
       deleteTable,
-      selectTable,
       updateOrderStatus,
       openShift,
       closeShift,
