@@ -55,7 +55,7 @@ POS Kasir dirancang khusus untuk kebutuhan operasional kuliner modern (restoran,
 | **Katalog & Produk**<br/>*Manajemen menu, penetapan harga, kategori, foto* | ![Katalog Produk](docs/images/04-katalog-produk.png) |
 | **Laporan Penjualan**<br/>*Grafik penjualan interaktif, rasio Tunai vs QRIS, & ekspor Excel/PDF* | ![Laporan Penjualan](docs/images/05-laporan-penjualan.png) |
 | **Pengaturan & Akun Kasir**<br/>*Kelola nama toko, printer struk, pajak, akun kasir, & backup data* | ![Pengaturan](docs/images/06-pengaturan-shift.png) |
-| **Pembayaran QRIS**<br/>*Kode QRIS statis untuk pembayaran non-tunai langsung* | ![QRIS Kasir](docs/images/40-kasir-qris-scannable-matrix.png) |
+| **Pembayaran QRIS**<br/>*Kode QRIS statis untuk pembayaran non-tunai langsung* | ![QRIS Kasir](docs/images/07-pembayaran-qris.png) |
 
 ---
 
