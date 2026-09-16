@@ -14,7 +14,7 @@
 
 <br/>
 
-![Tampilan Kasir KASA POS](docs/images/01-pos-kasir.png)
+![Tampilan Kasir POS Kasir](docs/images/01-pos-kasir.png)
 
 </div>
 
@@ -22,7 +22,7 @@
 
 ## 🌟 Ringkasan Keunggulan
 
-KASA dirancang khusus untuk kebutuhan operasional kuliner modern (restoran, cafe, kedai kopi, warung makan, dan bakery) yang mengutamakan **kecepatan transaksi, keandalan tanpa koneksi internet (offline-first), serta laporan analitik penjualan yang akurat dan terperinci**.
+POS Kasir dirancang khusus untuk kebutuhan operasional kuliner modern (restoran, cafe, kedai kopi, warung makan, dan bakery) yang mengutamakan **kecepatan transaksi, keandalan tanpa koneksi internet (offline-first), serta laporan analitik penjualan yang akurat dan terperinci**.
 
 - ⚡ **100% Offline-First (Dexie IndexedDB)**: Data transaksi, menu produk, dan riwayat penjualan tersimpan aman di browser lokal. Aplikasi tetap beroperasi penuh meskipun koneksi internet terputus.
 - 🚀 **Alur Kasir Cepat & Direct Checkout**: Alur transaksi kasir yang ringkas, responsif, dan bebas hambatan — langsung pilih menu, sesuaikan varian/catatan, hitung diskon & pajak, dan tuntaskan pembayaran.
@@ -51,11 +51,11 @@ KASA dirancang khusus untuk kebutuhan operasional kuliner modern (restoran, cafe
 | Modul | Tampilan Antarmuka |
 | :--- | :--- |
 | **Kasir Utama (POS)**<br/>*Pencarian instan, keranjang interaktif, diskon, QRIS, & cetak struk* | ![Kasir POS](docs/images/01-pos-kasir.png) |
-| **Daftar Pesanan**<br/>*Pemantauan pesanan berjalan, status disimpan, siap, & sudah dibayar* | ![Daftar Pesanan](docs/images/03-daftar-pesanan.png) |
-| **Katalog & Produk**<br/>*Manajemen menu, penetapan harga, kategori, foto, & SKU barcode* | ![Katalog Produk](docs/images/04-katalog-produk.png) |
+| **Daftar Pesanan**<br/>*Pemantauan pesanan yang sudah dibayar* | ![Daftar Pesanan](docs/images/03-daftar-pesanan.png) |
+| **Katalog & Produk**<br/>*Manajemen menu, penetapan harga, kategori, foto* | ![Katalog Produk](docs/images/04-katalog-produk.png) |
 | **Laporan Penjualan**<br/>*Grafik penjualan interaktif, rasio Tunai vs QRIS, & ekspor Excel/PDF* | ![Laporan Penjualan](docs/images/05-laporan-penjualan.png) |
 | **Pengaturan & Akun Kasir**<br/>*Kelola nama toko, printer struk, pajak, akun kasir, & backup data* | ![Pengaturan](docs/images/06-pengaturan-shift.png) |
-| **Pembayaran QRIS**<br/>*Kode QRIS dinamis untuk pembayaran non-tunai langsung* | ![QRIS Kasir](docs/images/40-kasir-qris-scannable-matrix.png) |
+| **Pembayaran QRIS**<br/>*Kode QRIS statis untuk pembayaran non-tunai langsung* | ![QRIS Kasir](docs/images/40-kasir-qris-scannable-matrix.png) |
 
 ---
 
@@ -75,11 +75,11 @@ Sistem dilengkapi fitur pengelolaan kasir mandiri (**CRUD: Tambah, Ubah, Hapus**
 - **Pencarian Cepat**: Temukan menu dalam hitungan milidetik berdasarkan nama atau SKU barcode.
 - **Kustomisasi Pesanan**: Tambahkan catatan khusus per menu (*less sugar, tanpa es, ekstra pedas*).
 - **Kalkulasi Otomatis**: Subtotal, diskon (persen maupun nominal), biaya layanan (*Service Charge*), dan Pajak (PPN).
-- **Metode Pembayaran Lengkap**: Tunai dengan kalkulator uang kembalian instan, QRIS Dinamis, Kartu Debit/Kredit, dan Transfer Bank.
+- **Metode Pembayaran Lengkap**: Tunai dengan kalkulator uang kembalian instan, QRIS, Kartu Debit/Kredit, dan Transfer Bank.
 - **Penyimpanan Draf Pesanan**: Pesanan dapat disimpan sementara (*hold order*) dan diselesaikan kemudian.
 
 ### 2. 📋 Pemantauan Pesanan (`/pesanan`)
-- **Daftar Pesanan Real-time**: Melacak seluruh transaksi yang sedang berlangsung maupun yang telah diselesaikan hari ini.
+- **Daftar Pesanan Real-time**: Melacak seluruh transaksi yang sudah selesai hari ini.
 - **Filter Status Pesanan**: Filter cepat berdasarkan status (*Disimpan*, *Siap*, *Sudah Dibayar*).
 - **Buka & Selesaikan Pesanan**: Muat kembali pesanan yang tersimpan langsung ke kasir untuk proses pembayaran.
 
